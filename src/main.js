@@ -236,6 +236,7 @@ function render() {
 }
 
 // Initial Render
+console.log('effDRY App v1.0.1 - GitHub Pages Build');
 render();
 
 // Subscribe to store changes to keep Sidebar and Title in sync
