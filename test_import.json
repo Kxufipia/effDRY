@@ -1,0 +1,58 @@
+{
+    "topics": [
+        {
+            "id": "customer_support_de",
+            "name": "Kundensupport (DE)",
+            "keywordMappings": {
+                "kunden_name": "Kundenname",
+                "ticket_nr": "Ticket-Nummer",
+                "thema": "Betreff"
+            },
+            "templates": [
+                {
+                    "id": "de_t1",
+                    "content": "Hallo {kunden_name},\n\nvielen Dank für Ihre Anfrage bezüglich \"{thema}\".\nWir haben Ticket #{ticket_nr} für Sie geöffnet.\n\nMit freundlichen Grüßen,\nIhr Support-Team",
+                    "isRichText": false
+                }
+            ]
+        },
+        {
+            "id": "invoice_generator",
+            "name": "Invoice Generator",
+            "keywordMappings": {
+                "inv_num": "Invoice #",
+                "client": "Client Name",
+                "due_date": "Due Date",
+                "total": "Total Amount ($)"
+            },
+            "templates": [
+                {
+                    "id": "inv_1",
+                    "content": "<h1>INVOICE #{inv_num}</h1><p><b>Bill To:</b> {client}</p><p><b>Amount Due:</b> ${total}</p><p>Please remit payment by {due_date}.</p>",
+                    "isRichText": true
+                }
+            ]
+        },
+        {
+            "id": "git_commit",
+            "name": "Git Commit Messages",
+            "keywordMappings": {
+                "scope": "Module/Scope",
+                "desc": "Short Description",
+                "issue": "Issue ID"
+            },
+            "templates": [
+                {
+                    "id": "git_feat",
+                    "content": "feat({scope}): {desc} (ref #{issue})",
+                    "isRichText": false
+                },
+                {
+                    "id": "git_fix",
+                    "content": "fix({scope}): {desc} - fixes #{issue}",
+                    "isRichText": false
+                }
+            ]
+        }
+    ]
+}
