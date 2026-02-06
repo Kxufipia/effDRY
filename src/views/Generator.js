@@ -10,6 +10,9 @@ export function renderGenerator(container, topic) {
     if (!valuesCache[topic.id]) valuesCache[topic.id] = {};
     const values = valuesCache[topic.id];
 
+    // Clear container to prevent duplication (e.g. on Reset)
+    container.innerHTML = '';
+
     const wrapper = document.createElement('div');
 
     // 1. INPUT FORM

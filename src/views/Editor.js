@@ -378,14 +378,19 @@ export function renderEditor(container, topic) {
             editor.innerHTML = tpl.content; // Render HTML
 
             // Sync changes
-            editor.onblur = () => {
+            editor.onblur = (e) => {
                 store.updateTemplate(topic.id, tpl.id, { content: editor.innerHTML });
+
+                const newFocus = e.relatedTarget;
+                if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
+                    return;
+                }
+
                 setTimeout(() => {
-                    // Check if focus is still outside
-                    if (document.activeElement !== editor) {
+                    if (document.activeElement !== editor && !kwToolbar.contains(document.activeElement)) {
                         if (kwToolbar) kwToolbar.remove();
                     }
-                }, 100);
+                }, 150);
             };
 
             // Track focus for shared keywords
@@ -418,15 +423,22 @@ export function renderEditor(container, topic) {
                 }
             };
 
-            textarea.onblur = () => {
-                // Delay hiding to allow clicks to register or intentional focus shifts
+            textarea.onblur = (e) => {
+                // Check if focus moved to valid UI elements (Toolbar)
+                // e.relatedTarget is the element receiving focus
+                const newFocus = e.relatedTarget;
+                if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
+                    return; // Don't remove if moving to toolbar
+                }
+
+                // Fallback: Delay hiding (for clicks where relatedTarget might be null briefly)
                 setTimeout(() => {
-                    if (document.activeElement !== textarea &&
-                        document.activeElement !== container && // Check if focus moved to toolbar? No, preventDef handles that.
-                        !kwToolbar.contains(document.activeElement)) { // Just in case
+                    const active = document.activeElement;
+                    if (active !== textarea &&
+                        !kwToolbar.contains(active)) {
                         if (kwToolbar) kwToolbar.remove();
                     }
-                }, 100);
+                }, 150);
             };
 
             textarea.onchange = (e) => store.updateTemplate(topic.id, tpl.id, { content: e.target.value });
