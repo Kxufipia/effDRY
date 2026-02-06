@@ -85,6 +85,8 @@ export function renderEditor(container, topic) {
         kwToolbar.style.background = 'rgba(0, 122, 204, 0.1)';
         kwToolbar.style.border = '1px solid var(--accent-color)';
         kwToolbar.style.borderRadius = '4px';
+        // Prevent focus loss when clicking toolbar background/gaps
+        kwToolbar.onmousedown = (e) => e.preventDefault();
 
         const kwLabel = document.createElement('div');
         kwLabel.textContent = 'Available Keywords (Click to Insert):';
@@ -215,16 +217,19 @@ export function renderEditor(container, topic) {
             field.ondragstart = (e) => {
                 draggedKeyword = k;
                 e.dataTransfer.effectAllowed = 'move';
+                // REQUIRED for Drag to work in some browsers/engines
+                e.dataTransfer.setData('text/plain', k);
                 field.style.opacity = '0.5';
+                field.classList.add('dragging');
             };
 
             field.ondragend = () => {
                 field.style.opacity = '1';
+                field.classList.remove('dragging');
                 draggedKeyword = null;
                 // Remove all drop indicators
                 Array.from(renameGrid.children).forEach(child => {
-                    child.style.borderTop = '1px solid transparent';
-                    child.style.borderBottom = '1px solid transparent';
+                    child.style.border = '1px solid transparent';
                 });
             };
 
@@ -232,33 +237,36 @@ export function renderEditor(container, topic) {
             field.ondragover = (e) => {
                 e.preventDefault(); // Necessary to allow dropping
                 e.dataTransfer.dropEffect = 'move';
+                field.style.border = '1px dashed var(--accent-color)';
+            };
 
-                // Simple visual indicator
-                // If moving down, show bottom border. If up, top border?
-                // For simplicity, let's just highlight the target
-                // specific implementation: swapping vs insertion. Insertion is better.
+            field.ondragleave = (e) => {
+                field.style.border = '1px solid transparent';
             };
 
             field.ondrop = (e) => {
                 e.preventDefault();
-                if (draggedKeyword === k) return;
+                field.style.border = '1px solid transparent';
+
+                // robustly get the source keyword
+                const sourceKw = draggedKeyword || e.dataTransfer.getData('text/plain');
+                if (!sourceKw || sourceKw === k) return;
 
                 // Reorder logic
                 let newOrder = [...sortedKeywords];
-                const fromIndex = newOrder.indexOf(draggedKeyword);
+                const fromIndex = newOrder.indexOf(sourceKw);
                 const toIndex = newOrder.indexOf(k);
 
                 if (fromIndex !== -1 && toIndex !== -1) {
                     // Remove from old pos
                     newOrder.splice(fromIndex, 1);
                     // Insert at new pos
-                    newOrder.splice(toIndex, 0, draggedKeyword);
+                    newOrder.splice(toIndex, 0, sourceKw);
 
                     // Update Store
                     store.updateKeywordOrder(topic.id, newOrder);
 
-                    // Re-render editor to show new order (simplest way)
-                    // Alternatively, manually re-arrange DOM, but full re-render is safer for consistency
+                    // Re-render editor
                     renderEditor(container, topic);
                 }
             };
@@ -372,7 +380,12 @@ export function renderEditor(container, topic) {
             // Sync changes
             editor.onblur = () => {
                 store.updateTemplate(topic.id, tpl.id, { content: editor.innerHTML });
-                if (kwToolbar) kwToolbar.remove();
+                setTimeout(() => {
+                    // Check if focus is still outside
+                    if (document.activeElement !== editor) {
+                        if (kwToolbar) kwToolbar.remove();
+                    }
+                }, 100);
             };
 
             // Track focus for shared keywords
@@ -406,7 +419,14 @@ export function renderEditor(container, topic) {
             };
 
             textarea.onblur = () => {
-                if (kwToolbar) kwToolbar.remove();
+                // Delay hiding to allow clicks to register or intentional focus shifts
+                setTimeout(() => {
+                    if (document.activeElement !== textarea &&
+                        document.activeElement !== container && // Check if focus moved to toolbar? No, preventDef handles that.
+                        !kwToolbar.contains(document.activeElement)) { // Just in case
+                        if (kwToolbar) kwToolbar.remove();
+                    }
+                }, 100);
             };
 
             textarea.onchange = (e) => store.updateTemplate(topic.id, tpl.id, { content: e.target.value });
