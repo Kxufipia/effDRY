@@ -95,17 +95,13 @@ export const store = {
     }
   },
 
-  updateTemplate(topicId, templateId, updates) {
+  updateTemplate(topicId, templateId, updates, notify = true) {
     const topic = this.state.topics.find(t => t.id === topicId);
     if (topic) {
-      const template = topic.templates.find(t => t.id === templateId);
-      if (template) {
-        if (typeof updates === 'string') {
-          template.content = updates; // Backward compatibility
-        } else {
-          Object.assign(template, updates);
-        }
-        this.save();
+      const tpl = topic.templates.find(t => t.id === templateId);
+      if (tpl) {
+        Object.assign(tpl, updates);
+        this.save(notify);
       }
     }
   },

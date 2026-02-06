@@ -78,9 +78,14 @@ export function renderEditor(container, topic) {
 
     // 3. Shared Keyword Toolbar
     let kwToolbar = null;
+    let isMouseOverToolbar = false; // Track hover state to prevent hiding on blur
     if (allKeywords.size > 0) {
         kwToolbar = document.createElement('div');
         kwToolbar.className = 'mb-4';
+        kwToolbar.onmouseenter = () => isMouseOverToolbar = true;
+        kwToolbar.onmouseleave = () => isMouseOverToolbar = false;
+
+        kwToolbar.style.padding = '10px';
         kwToolbar.style.padding = '10px';
         kwToolbar.style.background = 'rgba(0, 122, 204, 0.1)';
         kwToolbar.style.border = '1px solid var(--accent-color)';
@@ -112,6 +117,8 @@ export function renderEditor(container, topic) {
 
             badge.onmousedown = (e) => {
                 e.preventDefault(); // Prevent focus loss from editor
+                e.stopPropagation(); // Don't bubble to container
+
                 if (lastFocusedTextarea) {
                     const text = `{${k}}`;
 
@@ -379,7 +386,9 @@ export function renderEditor(container, topic) {
 
             // Sync changes
             editor.onblur = (e) => {
-                store.updateTemplate(topic.id, tpl.id, { content: editor.innerHTML });
+                store.updateTemplate(topic.id, tpl.id, { content: editor.innerHTML }, false); // Silent Update
+
+                if (isMouseOverToolbar) return; // Sticky!
 
                 const newFocus = e.relatedTarget;
                 if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
@@ -387,7 +396,9 @@ export function renderEditor(container, topic) {
                 }
 
                 setTimeout(() => {
-                    if (document.activeElement !== editor && !kwToolbar.contains(document.activeElement)) {
+                    if (document.activeElement !== editor &&
+                        !kwToolbar.contains(document.activeElement) &&
+                        !isMouseOverToolbar) {
                         if (kwToolbar) kwToolbar.remove();
                     }
                 }, 150);
