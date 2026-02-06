@@ -20,14 +20,57 @@ export function renderGenerator(container, topic) {
 
     if (keywords.size > 0) {
         const headerNodes = document.createElement('div');
-        headerNodes.innerHTML = '<h3 style="font-size:1rem; margin-bottom:15px; text-transform:uppercase; opacity:0.7;">1. Enter Keywords</h3>';
+        headerNodes.style.display = 'flex';
+        headerNodes.style.justifyContent = 'space-between';
+        headerNodes.style.alignItems = 'center';
+        headerNodes.style.marginBottom = '15px';
+
+        const title = document.createElement('h3');
+        title.style.fontSize = '1rem';
+        title.style.textTransform = 'uppercase';
+        title.style.opacity = '0.7';
+        title.style.margin = '0';
+        title.textContent = '1. Enter Keywords';
+
+        const resetBtn = document.createElement('button');
+        resetBtn.className = 'secondary';
+        resetBtn.textContent = 'Reset Inputs';
+        resetBtn.style.fontSize = '0.8rem';
+        resetBtn.onclick = () => {
+            if (confirm('Clear all inputs?')) {
+                Object.keys(values).forEach(k => delete values[k]);
+                // Re-render inputs to clear them
+                renderGenerator(container, topic);
+            }
+        };
+
+        headerNodes.append(title, resetBtn);
         wrapper.appendChild(headerNodes);
 
         const form = document.createElement('div');
         form.className = 'grid mb-4';
         form.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
 
-        keywords.forEach(k => {
+        // Convert to array and sort based on topic.keywordOrder
+        const sortedKeywords = Array.from(keywords);
+        if (topic.keywordOrder && topic.keywordOrder.length > 0) {
+            sortedKeywords.sort((a, b) => {
+                const idxA = topic.keywordOrder.indexOf(a);
+                const idxB = topic.keywordOrder.indexOf(b);
+                // If both found, sort by index
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                // If only A found, A comes first
+                if (idxA !== -1) return -1;
+                // If only B found, B comes first
+                if (idxB !== -1) return 1;
+                // If neither, alphabet (default) or keep relative? Let's use localeCompare
+                return a.localeCompare(b);
+            });
+        } else {
+            sortedKeywords.sort(); // Default alphabetical
+        }
+
+        sortedKeywords.forEach(k => {
             const field = document.createElement('div');
 
             const label = document.createElement('label');

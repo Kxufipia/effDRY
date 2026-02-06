@@ -50,7 +50,7 @@ export const store = {
   // Actions
   addTopic(name) {
     const id = crypto.randomUUID();
-    this.state.topics.push({ id, name, templates: [], keywordMappings: {} });
+    this.state.topics.push({ id, name, templates: [], keywordMappings: {}, keywordOrder: [] });
     this.save();
     return id;
   },
@@ -68,6 +68,14 @@ export const store = {
     if (topic) {
       if (!topic.keywordMappings) topic.keywordMappings = {};
       topic.keywordMappings[keyword] = label;
+      this.save();
+    }
+  },
+
+  updateKeywordOrder(topicId, newOrder) {
+    const topic = this.state.topics.find(t => t.id === topicId);
+    if (topic) {
+      topic.keywordOrder = newOrder;
       this.save();
     }
   },

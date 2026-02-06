@@ -1,0 +1,25 @@
+{
+    "topics": [
+        {
+            "id": "test_sorting_topic",
+            "name": "Test: Keyword Sorting",
+            "keywordMappings": {
+                "z_last": "Zebra",
+                "a_first": "Apple",
+                "m_middle": "Middle"
+            },
+            "keywordOrder": [
+                "a_first",
+                "m_middle",
+                "z_last"
+            ],
+            "templates": [
+                {
+                    "id": "t_sort_1",
+                    "content": "This template uses three variables: {z_last}, {a_first}, and {m_middle}. In the Generator, they should appear in Alphabetical order of their variable names because of the defined order.",
+                    "isRichText": false
+                }
+            ]
+        }
+    ]
+}

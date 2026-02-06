@@ -186,8 +186,82 @@ export function renderEditor(container, topic) {
         renameGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
         renameGrid.style.gap = '10px';
 
-        allKeywords.forEach(k => {
+        // Sort keywords for display
+        const sortedKeywords = Array.from(allKeywords);
+        if (topic.keywordOrder && topic.keywordOrder.length > 0) {
+            sortedKeywords.sort((a, b) => {
+                const idxA = topic.keywordOrder.indexOf(a);
+                const idxB = topic.keywordOrder.indexOf(b);
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                if (idxA !== -1) return -1;
+                if (idxB !== -1) return 1;
+                return a.localeCompare(b);
+            });
+        } else {
+            sortedKeywords.sort();
+        }
+
+        // Drag and Drop State
+        let draggedKeyword = null;
+
+        sortedKeywords.forEach(k => {
             const field = document.createElement('div');
+            field.draggable = true; // Enable Drag
+            field.dataset.keyword = k;
+            field.style.cursor = 'grab';
+            field.style.border = '1px solid transparent';
+
+            // Visual feedback during drag
+            field.ondragstart = (e) => {
+                draggedKeyword = k;
+                e.dataTransfer.effectAllowed = 'move';
+                field.style.opacity = '0.5';
+            };
+
+            field.ondragend = () => {
+                field.style.opacity = '1';
+                draggedKeyword = null;
+                // Remove all drop indicators
+                Array.from(renameGrid.children).forEach(child => {
+                    child.style.borderTop = '1px solid transparent';
+                    child.style.borderBottom = '1px solid transparent';
+                });
+            };
+
+            // Drag Over - Allow Drop
+            field.ondragover = (e) => {
+                e.preventDefault(); // Necessary to allow dropping
+                e.dataTransfer.dropEffect = 'move';
+
+                // Simple visual indicator
+                // If moving down, show bottom border. If up, top border?
+                // For simplicity, let's just highlight the target
+                // specific implementation: swapping vs insertion. Insertion is better.
+            };
+
+            field.ondrop = (e) => {
+                e.preventDefault();
+                if (draggedKeyword === k) return;
+
+                // Reorder logic
+                let newOrder = [...sortedKeywords];
+                const fromIndex = newOrder.indexOf(draggedKeyword);
+                const toIndex = newOrder.indexOf(k);
+
+                if (fromIndex !== -1 && toIndex !== -1) {
+                    // Remove from old pos
+                    newOrder.splice(fromIndex, 1);
+                    // Insert at new pos
+                    newOrder.splice(toIndex, 0, draggedKeyword);
+
+                    // Update Store
+                    store.updateKeywordOrder(topic.id, newOrder);
+
+                    // Re-render editor to show new order (simplest way)
+                    // Alternatively, manually re-arrange DOM, but full re-render is safer for consistency
+                    renderEditor(container, topic);
+                }
+            };
 
             const label = document.createElement('label');
             label.textContent = `{${k}}`;
@@ -195,6 +269,7 @@ export function renderEditor(container, topic) {
             label.style.fontSize = '0.75rem';
             label.style.color = '#ce9178';
             label.style.marginBottom = '2px';
+            label.style.pointerEvents = 'none'; // Prevent interfering with drag
 
             const input = document.createElement('input');
             input.placeholder = "Display Label";
@@ -203,6 +278,8 @@ export function renderEditor(container, topic) {
             input.value = mappings[k] || '';
             input.style.fontSize = '0.85rem';
             input.style.padding = '4px 8px';
+            // Prevent drag when interacting with input
+            input.onmousedown = (e) => e.stopPropagation();
 
             input.onchange = (e) => {
                 store.updateKeywordMapping(topic.id, k, e.target.value);
