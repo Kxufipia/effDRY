@@ -106,10 +106,16 @@ export function renderEditor(container, topic) {
         kwList.style.gap = '8px';
 
         allKeywords.forEach(k => {
-            const badge = document.createElement('button');
+            const badge = document.createElement('div');
             badge.className = 'keyword-badge';
             badge.textContent = `{${k}}`;
             badge.style.cursor = 'pointer';
+            badge.style.display = 'inline-block';
+            badge.style.alignItems = 'center';
+            badge.style.justifyContent = 'center';
+            badge.style.padding = '2px 6px';
+            badge.style.fontSize = '0.9rem';
+            badge.tabIndex = -1; // Not key focusable
             badge.style.background = 'var(--input-bg)';
             badge.style.color = '#ce9178';
             badge.style.border = '1px solid var(--border-color)';
@@ -435,24 +441,26 @@ export function renderEditor(container, topic) {
             };
 
             textarea.onblur = (e) => {
-                // Check if focus moved to valid UI elements (Toolbar)
-                // e.relatedTarget is the element receiving focus
+                store.updateTemplate(topic.id, tpl.id, { content: e.target.value }, false); // Silent
+
+                if (isMouseOverToolbar) return; // Sticky!
+
                 const newFocus = e.relatedTarget;
                 if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
                     return; // Don't remove if moving to toolbar
                 }
 
-                // Fallback: Delay hiding (for clicks where relatedTarget might be null briefly)
                 setTimeout(() => {
                     const active = document.activeElement;
                     if (active !== textarea &&
-                        !kwToolbar.contains(active)) {
+                        !kwToolbar.contains(active) &&
+                        !isMouseOverToolbar) {
                         if (kwToolbar) kwToolbar.remove();
                     }
                 }, 150);
             };
 
-            textarea.onchange = (e) => store.updateTemplate(topic.id, tpl.id, { content: e.target.value });
+            textarea.onchange = (e) => store.updateTemplate(topic.id, tpl.id, { content: e.target.value }, false);
             card.appendChild(textarea);
         }
 
