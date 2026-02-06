@@ -42,9 +42,11 @@ export const store = {
     this.listeners.forEach(l => l(this.state));
   },
 
-  save() {
+  save(notify = true) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
-    this.notify();
+    if (notify) {
+      this.notify();
+    }
   },
 
   // Actions

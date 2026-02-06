@@ -78,12 +78,9 @@ export function renderEditor(container, topic) {
 
     // 3. Shared Keyword Toolbar
     let kwToolbar = null;
-    let isMouseOverToolbar = false; // Track hover state to prevent hiding on blur
     if (allKeywords.size > 0) {
         kwToolbar = document.createElement('div');
         kwToolbar.className = 'mb-4';
-        kwToolbar.onmouseenter = () => isMouseOverToolbar = true;
-        kwToolbar.onmouseleave = () => isMouseOverToolbar = false;
 
         kwToolbar.style.padding = '10px';
         kwToolbar.style.padding = '10px';
@@ -394,7 +391,7 @@ export function renderEditor(container, topic) {
             editor.onblur = (e) => {
                 store.updateTemplate(topic.id, tpl.id, { content: editor.innerHTML }, false); // Silent Update
 
-                if (isMouseOverToolbar) return; // Sticky!
+                if (kwToolbar && kwToolbar.matches(':hover')) return;
 
                 const newFocus = e.relatedTarget;
                 if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
@@ -404,7 +401,7 @@ export function renderEditor(container, topic) {
                 setTimeout(() => {
                     if (document.activeElement !== editor &&
                         !kwToolbar.contains(document.activeElement) &&
-                        !isMouseOverToolbar) {
+                        !kwToolbar.matches(':hover')) {
                         if (kwToolbar) kwToolbar.remove();
                     }
                 }, 150);
@@ -443,7 +440,8 @@ export function renderEditor(container, topic) {
             textarea.onblur = (e) => {
                 store.updateTemplate(topic.id, tpl.id, { content: e.target.value }, false); // Silent
 
-                if (isMouseOverToolbar) return; // Sticky!
+                // Robust check: Is the mouse over the toolbar?
+                if (kwToolbar && kwToolbar.matches(':hover')) return;
 
                 const newFocus = e.relatedTarget;
                 if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
@@ -454,7 +452,7 @@ export function renderEditor(container, topic) {
                     const active = document.activeElement;
                     if (active !== textarea &&
                         !kwToolbar.contains(active) &&
-                        !isMouseOverToolbar) {
+                        !kwToolbar.matches(':hover')) {
                         if (kwToolbar) kwToolbar.remove();
                     }
                 }, 150);
