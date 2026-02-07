@@ -515,4 +515,5 @@ export function renderEditor(container, topic) {
         list.appendChild(card);
     });
 
+    container.appendChild(list);
 }
