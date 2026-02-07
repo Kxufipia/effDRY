@@ -8,39 +8,19 @@
 export function extractKeywords(templateContent) {
     if (!templateContent) return [];
     const regex = /{([^}]+)}/g;
-    const keywords = new Map(); // Use Map to track unique keys but keep first found default
+    const simpleKeywords = new Set();
     let match;
     while ((match = regex.exec(templateContent)) !== null) {
-        const raw = match[1];
-        let [key, defaultValue] = raw.split(':').map(s => s.trim());
-        if (!defaultValue) defaultValue = null;
+        const raw = match[1].trim();
 
-        if (!keywords.has(key)) {
-            keywords.set(key, defaultValue);
-        } else if (defaultValue && !keywords.get(key)) {
-            // Update existing key if we found a default value later (optional behavior)
-            keywords.set(key, defaultValue);
+        // Handle logic tags
+        if (raw.startsWith('/')) continue; // Ignore closing tags {/if}
+        if (raw.startsWith('#if ')) {     // Handle opening tags {#if var}
+            simpleKeywords.add(raw.substring(4).trim());
+            continue;
         }
-    }
-    // Return array of objects for easier consumption, or just keys if we want backward compat
-    // For now, let's return just keys to avoid breaking existing consumers, 
-    // BUT we need a way to get defaults. 
-    // Actually, let's return strings (keys) here for backward compat with Set() usage in Editor,
-    // and create a new function for rich extraction if needed?
-    // Wait, the plan said "Return objects {key, default}".
-    // Let's check usages. Editor.js uses `extractKeywords(t.content).forEach(k => allKeywords.add(k))`
-    // If we return objects, `allKeywords` (a Set) will contain objects. Converting to Array from Set of objects works but `has` checks fail.
-    // We should probably keep `extractKeywords` returning strings for compatibility, 
-    // and add `extractVariables` for the rich data.
 
-    // REVISED PLAN inline:
-    // 1. `extractKeywords` returns just unique keys (strings) as before, but strips defaults.
-    // 2. `extractVariableDefaults` returns a map of key -> default.
-    // OR simplify: just handle the stripping in `extractKeywords` so {name:John} returns "name".
-
-    const simpleKeywords = new Set();
-    while ((match = regex.exec(templateContent)) !== null) {
-        let [key] = match[1].split(':');
+        let [key] = raw.split(':');
         simpleKeywords.add(key.trim());
     }
     return Array.from(simpleKeywords);
@@ -99,4 +79,66 @@ export function interpolate(templateContent, values) {
 
         return match;
     });
+}
+
+/**
+ * Parses {#if variable}...{/if} blocks.
+ * @param {string} content 
+ * @param {Object} values 
+ * @returns {string} Processed content
+ */
+export function parseLogic(content, values) {
+    if (!content) return '';
+    // Match {#if key}content{/if}
+    // [\s\S] matches any char including newlines
+    return content.replace(/{#if\s+([^}]+)}([\s\S]*?){\/if}/g, (match, key, blockContent) => {
+        key = key.trim();
+        const val = values[key];
+        // Truthy check (handles boolean true, string "true", or non-empty string)
+        if (val && val !== 'false') {
+            return blockContent;
+        }
+        return '';
+    });
+}
+
+/**
+ * Scans template to determine variable types.
+ * @param {string} content 
+ * @returns {Object} Map of key -> 'boolean' | 'text'
+ */
+export function getVariableTypes(content) {
+    const types = {};
+    if (!content) return types;
+
+    // Find boolean variables (used in #if)
+    let match;
+    const ifRegex = /{#if\s+([^}]+)}/g;
+    while ((match = ifRegex.exec(content)) !== null) {
+        const key = match[1].trim();
+        types[key] = 'boolean';
+    }
+
+    // Find text variables (standard {})
+    const varRegex = /{([^}]+)}/g;
+    while ((match = varRegex.exec(content)) !== null) {
+        const raw = match[1].trim();
+        // Ignore tokens starting with # or /
+        if (raw.startsWith('#') || raw.startsWith('/')) continue;
+
+        let [key] = raw.split(':');
+        key = key.trim();
+
+        // Only set to text if not already marked as boolean (or prioritize text? logic implies boolean usually)
+        // If a var is used in both {#if x} and {x}, treat as boolean to allow toggling?
+        // Or treat as text? 
+        // Let's default to 'text' if not found, but if found in #if, mark boolean.
+        // Actually, if I write "Hello {show}" and also "{#if show}Big Show{/if}", 
+        // I probably want a checkbox. If checked -> "Hello true" and "Big Show".
+        // A checkbox returning "true"/"false" strings works for both.
+        if (!types[key]) {
+            types[key] = 'text';
+        }
+    }
+    return types;
 }

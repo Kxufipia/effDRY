@@ -1,0 +1,35 @@
+{
+    "topics": [
+        {
+            "id": "test-features-v2",
+            "name": "Feature Showcase: Defaults & Copy",
+            "templates": [
+                {
+                    "id": "tpl-defaults-1",
+                    "content": "Hi {name:Valued Customer},\n\nWe noticed you haven't logged in since {date:today}. Please check out our new features in {app_name:effDRY}!\n\nBest,\n{sender:Support Team}",
+                    "isRichText": false
+                },
+                {
+                    "id": "tpl-html-1",
+                    "content": "<div style=\"font-family: sans-serif; padding: 20px; border: 1px solid #ccc;\">\n  <h2 style=\"color: #007acc;\">Invoice #{invoice_id:0000}</h2>\n  <p><strong>Billed To:</strong> {client_name:Client}</p>\n  <p><strong>Amount:</strong> <span style=\"font-weight:bold;\">${amount:0.00}</span></p>\n  <hr>\n  <p style=\"font-size: 0.8rem; color: #666;\">Payment due by {due_date:immediately}.</p>\n</div>",
+                    "isRichText": true
+                }
+            ],
+            "keywordMappings": {
+                "app_name": "Application",
+                "client_name": "Client Name",
+                "invoice_id": "Invoice Number"
+            },
+            "keywordOrder": [
+                "name",
+                "client_name",
+                "invoice_id",
+                "amount",
+                "due_date",
+                "app_name",
+                "sender",
+                "date"
+            ]
+        }
+    ]
+}

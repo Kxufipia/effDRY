@@ -1,5 +1,5 @@
 import { store } from '../store.js'
-import { extractKeywords, extractDefaults, interpolate } from '../utils.js'
+import { extractKeywords, extractDefaults, interpolate, parseLogic, getVariableTypes } from '../utils.js'
 
 // Cache input values by topic ID to persist data when switching tabs.
 // In a larger app, this would be part of the global store.
@@ -28,8 +28,18 @@ export function renderGenerator(container, topic) {
     // Collect all unique keywords from all templates in this topic
     const keywords = new Set();
     const safeTemplates = topic.templates || [];
+    const varTypes = {};
+
     safeTemplates.forEach(t => {
-        extractKeywords(t.content || '').forEach(k => keywords.add(k));
+        const content = t.content || '';
+        extractKeywords(content).forEach(k => keywords.add(k));
+
+        const types = getVariableTypes(content);
+        Object.keys(types).forEach(k => {
+            // Prioritize 'boolean' if found in any template
+            if (varTypes[k] === 'boolean') return;
+            varTypes[k] = types[k];
+        });
     });
 
     if (keywords.size > 0) {
@@ -103,31 +113,54 @@ export function renderGenerator(container, topic) {
         // Render input fields
         sortedKeywords.forEach(k => {
             const field = document.createElement('div');
+            // Check variable type
+            const isBoolean = varTypes[k] === 'boolean';
 
             const label = document.createElement('label');
             const mappings = topic.keywordMappings || {};
-            // Use custom label if available, otherwise use keyword key
             label.textContent = mappings[k] || k;
+
             if (mappings[k]) {
                 label.style.fontWeight = 'bold';
                 label.style.color = 'var(--text-color)';
             }
-            label.style.display = 'block';
-            label.style.marginBottom = '4px';
+
+            if (isBoolean) {
+                field.className = 'flex-row';
+                field.style.alignItems = 'center';
+                field.style.gap = '10px';
+                label.style.marginBottom = '0';
+                label.style.order = '2'; // Label after checkbox
+            } else {
+                label.style.display = 'block';
+                label.style.marginBottom = '4px';
+            }
+
             label.style.fontSize = '0.8rem';
             label.style.color = '#ce9178';
 
-            const input = document.createElement('input');
-            input.value = values[k] || '';
-            input.placeholder = defaults[k] ? `Default: ${defaults[k]}` : `Value for ${k}...`;
+            let input;
+            if (isBoolean) {
+                input = document.createElement('input');
+                input.type = 'checkbox';
+                input.checked = !!values[k];
+                input.style.width = 'auto'; // Reset width for checkbox
+                input.onchange = (e) => {
+                    values[k] = e.target.checked;
+                    renderPreviews();
+                };
+            } else {
+                input = document.createElement('input');
+                input.value = values[k] || '';
+                input.placeholder = defaults[k] ? `Default: ${defaults[k]}` : `Value for ${k}...`;
+                input.oninput = (e) => {
+                    values[k] = e.target.value;
+                    renderPreviews();
+                };
+            }
 
-            // Real-time update
-            input.oninput = (e) => {
-                values[k] = e.target.value;
-                renderPreviews(); // Refresh previews immediately
-            };
-
-            field.append(label, input);
+            field.append(isBoolean ? input : label);
+            field.append(isBoolean ? label : input);
             form.appendChild(field);
         });
         wrapper.appendChild(form);
@@ -182,7 +215,10 @@ export function renderGenerator(container, topic) {
             copyTextBtn.title = "Copy Plain Text";
 
             // Interpolate values
-            const text = interpolate(t.content || '', values);
+            // 1. Process Logic blocks ({#if var}...{/if})
+            const processedContent = parseLogic(t.content || '', values);
+            // 2. Interpolate variables ({var})
+            const text = interpolate(processedContent, values);
 
             copyTextBtn.onclick = () => {
                 const plainText = text.replace(/<[^>]+>/g, ''); // Simple strip tags

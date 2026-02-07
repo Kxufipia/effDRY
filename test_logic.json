@@ -1,0 +1,35 @@
+{
+    "topics": [
+        {
+            "id": "test-logic-v1",
+            "name": "Feature Showcase: Logic & Conditionals",
+            "templates": [
+                {
+                    "id": "tpl-logic-1",
+                    "content": "Hi {name},\n\n{#if is_vip}Thanks for being a VIP member! Here is a special discount code: VIP2024.{/if}\n\nWe sort of missed you since {date}.\n\n{#if show_footer}\n---\nSent from effDRY App\nVisit us at effdry.com\n{/if}",
+                    "isRichText": false
+                },
+                {
+                    "id": "tpl-logic-2",
+                    "content": "<div style=\"border: 1px solid #ddd; padding: 10px;\">\n  <h3>Status Update</h3>\n  <p>User: {user}</p>\n  {#if has_errors}\n  <div style=\"color: red; background: #ffeeee; padding: 5px;\">\n    <strong>Warning:</strong> System found errors.\n  </div>\n  {/if}\n  {#if is_success}\n  <div style=\"color: green; background: #eeffee; padding: 5px;\">\n    <strong>Success:</strong> All systems operational.\n  </div>\n  {/if}\n</div>",
+                    "isRichText": true
+                }
+            ],
+            "keywordMappings": {
+                "is_vip": "Is VIP?",
+                "show_footer": "Include Footer?",
+                "has_errors": "Show Errors?",
+                "is_success": "Show Success?"
+            },
+            "keywordOrder": [
+                "name",
+                "date",
+                "is_vip",
+                "show_footer",
+                "user",
+                "has_errors",
+                "is_success"
+            ]
+        }
+    ]
+}
