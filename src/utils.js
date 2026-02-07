@@ -87,6 +87,27 @@ export function interpolate(templateContent, values) {
  * @param {Object} values 
  * @returns {string} Processed content
  */
+/**
+ * Checks if a value is truthy, handling string "false", "0", "no", etc.
+ * @param {any} val 
+ * @returns {boolean}
+ */
+export function isTruthy(val) {
+    if (!val) return false;
+    if (val === true) return true;
+    if (typeof val === 'string') {
+        const falsy = ['false', '0', 'no', 'nein', 'off', 'null', 'undefined', ''];
+        return !falsy.includes(val.toLowerCase().trim());
+    }
+    return !!val;
+}
+
+/**
+ * Parses {#if variable}...{/if} blocks.
+ * @param {string} content 
+ * @param {Object} values 
+ * @returns {string} Processed content
+ */
 export function parseLogic(content, values) {
     if (!content) return '';
     // Match {#if key}content{/if}
@@ -95,11 +116,7 @@ export function parseLogic(content, values) {
         key = key.trim();
         const val = values[key];
 
-        // Define falsy values (case-insensitive)
-        const falsy = ['false', '0', 'no', 'nein', 'off', 'null', 'undefined', ''];
-        const isFalsy = !val || (typeof val === 'string' && falsy.includes(val.toLowerCase().trim()));
-
-        if (!isFalsy) {
+        if (isTruthy(val)) {
             return blockContent;
         }
         return '';

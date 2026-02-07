@@ -1,5 +1,5 @@
 import { store } from '../store.js'
-import { extractKeywords, extractDefaults, interpolate, parseLogic, getVariableTypes } from '../utils.js'
+import { extractKeywords, extractDefaults, interpolate, parseLogic, getVariableTypes, isTruthy } from '../utils.js'
 
 // Cache input values by topic ID to persist data when switching tabs.
 // In a larger app, this would be part of the global store.
@@ -143,7 +143,7 @@ export function renderGenerator(container, topic) {
             if (isBoolean) {
                 input = document.createElement('input');
                 input.type = 'checkbox';
-                input.checked = !!values[k];
+                input.checked = isTruthy(values[k]);
                 input.style.width = 'auto'; // Reset width for checkbox
                 input.onchange = (e) => {
                     values[k] = e.target.checked;
