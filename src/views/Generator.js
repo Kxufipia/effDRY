@@ -27,8 +27,9 @@ export function renderGenerator(container, topic) {
 
     // Collect all unique keywords from all templates in this topic
     const keywords = new Set();
-    topic.templates.forEach(t => {
-        extractKeywords(t.content).forEach(k => keywords.add(k));
+    const safeTemplates = topic.templates || [];
+    safeTemplates.forEach(t => {
+        extractKeywords(t.content || '').forEach(k => keywords.add(k));
     });
 
     if (keywords.size > 0) {
@@ -87,8 +88,8 @@ export function renderGenerator(container, topic) {
 
         // Collect defaults
         const defaults = {};
-        topic.templates.forEach(t => {
-            Object.assign(defaults, extractDefaults(t.content));
+        safeTemplates.forEach(t => {
+            Object.assign(defaults, extractDefaults(t.content || ''));
         });
 
         // Loop inputs and set initial values if empty

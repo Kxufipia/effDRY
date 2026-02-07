@@ -6,6 +6,7 @@
  * @returns {Array<{key: string, default: string|null}>} An array of unique keyword objects.
  */
 export function extractKeywords(templateContent) {
+    if (!templateContent) return [];
     const regex = /{([^}]+)}/g;
     const keywords = new Map(); // Use Map to track unique keys but keep first found default
     let match;
@@ -51,6 +52,7 @@ export function extractKeywords(templateContent) {
  * @returns {Object} Map of key -> defaultValue
  */
 export function extractDefaults(templateContent) {
+    if (!templateContent) return {};
     const regex = /{([^}]+)}/g;
     const defaults = {};
     let match;
