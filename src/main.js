@@ -6,33 +6,43 @@ import { renderImpressum, renderPrivacy } from './views/Legal.js'
 
 const app = document.querySelector('#app')
 
-// Global State for UI
-let currentMode = 'editor';
+// =========================================
+// Global UI State
+// =========================================
+let currentMode = 'editor'; // 'editor', 'generator', 'impressum', 'privacy'
 let selectedTopicId = null;
 
-// Initial Logic
+// =========================================
+// Initialization Logic
+// =========================================
 if (store.state.topics.length > 0) {
   selectedTopicId = store.state.topics[0].id;
   currentMode = 'generator'; // Default to generator if topics exist
 } else {
-  // No topics? Default to editor.
-  // We can also auto-trigger a new topic for them to start editing immediately.
+  // If no topics exist, create a default one to start fresh
   const id = store.addTopic('New Topic');
   selectedTopicId = id;
   currentMode = 'editor';
 }
 
+/**
+ * Main Render Function
+ * Rebuilds the entire application DOM based on current state.
+ */
 function render() {
   app.innerHTML = '';
 
-  // App Shell Structure
+  // App Shell Container
   const shell = document.createElement('div');
   shell.className = 'app-shell';
 
-  // --- SIDEBAR ---
+  // -----------------------------------------
+  // Left Sidebar
+  // -----------------------------------------
   const sidebar = document.createElement('aside');
   sidebar.className = 'sidebar';
 
+  // Sidebar Header (Topics)
   const sbHeader = document.createElement('div');
   sbHeader.className = 'sidebar-header';
   sbHeader.innerHTML = '<span>TOPICS</span>';
@@ -50,16 +60,18 @@ function render() {
   sbHeader.appendChild(addBtn);
   sidebar.appendChild(sbHeader);
 
+  // Sidebar Content (Topic List)
   const sbContent = document.createElement('div');
   sbContent.className = 'sidebar-content';
 
   store.state.topics.forEach(topic => {
     const item = document.createElement('div');
+    // Highlight if active and in a topic-related mode
     item.className = `sidebar-item ${topic.id === selectedTopicId && ['editor', 'generator'].includes(currentMode) ? 'active' : ''}`;
     item.textContent = topic.name;
     item.onclick = () => {
       selectedTopicId = topic.id;
-      // Preserve mode if switching between topics, otherwise default to editor
+      // Switch back to editor if currently in a legal view
       if (!['editor', 'generator'].includes(currentMode)) {
         currentMode = 'editor';
       }
@@ -67,21 +79,24 @@ function render() {
     };
     sbContent.appendChild(item);
   });
-
   sidebar.appendChild(sbContent);
 
-  // Data Section
+  // -----------------------------------------
+  // Sidebar Footer (Data & Legal)
+  // -----------------------------------------
+
+  // Data Management Section
   const sbData = document.createElement('div');
-  sbData.className = 'sidebar-legal'; // Reuse styling
+  sbData.className = 'sidebar-legal';
   sbData.style.borderTop = '1px solid var(--border-color)';
 
   const dataHeader = document.createElement('div');
   dataHeader.className = 'sidebar-header';
   dataHeader.style.borderBottom = 'none';
-  dataHeader.innerHTML = '<span>DATEN</span>';
+  dataHeader.innerHTML = '<span>DATA</span>';
   sbData.appendChild(dataHeader);
 
-  // EXPORT
+  // Export Button
   const exportItem = document.createElement('div');
   exportItem.className = 'sidebar-item';
   exportItem.textContent = 'Export JSON';
@@ -90,18 +105,17 @@ function render() {
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
     downloadAnchorNode.setAttribute("download", "effdry_data.json");
-    document.body.appendChild(downloadAnchorNode); // required for firefox
+    document.body.appendChild(downloadAnchorNode); // Required for Firefox
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
   };
   sbData.appendChild(exportItem);
 
-  // IMPORT
+  // Import Button
   const importItem = document.createElement('div');
   importItem.className = 'sidebar-item';
   importItem.textContent = 'Import JSON';
   importItem.onclick = () => {
-    // Create hidden file input
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -115,7 +129,7 @@ function render() {
           const data = JSON.parse(e.target.result);
           if (store.importData(data)) {
             alert('Import successful!');
-            // Reset state
+            // Reset selection to first available topic
             selectedTopicId = store.state.topics.length > 0 ? store.state.topics[0].id : null;
             currentMode = 'editor';
             render();
@@ -134,15 +148,15 @@ function render() {
   sbData.appendChild(importItem);
   sidebar.appendChild(sbData);
 
-  // Legal Section in Sidebar (Bottom)
+  // Legal Links Section
   const sbLegal = document.createElement('div');
   sbLegal.className = 'sidebar-legal';
   sbLegal.style.borderTop = '1px solid var(--border-color)';
 
   const legalHeader = document.createElement('div');
   legalHeader.className = 'sidebar-header';
-  legalHeader.style.borderBottom = 'none'; // Remove border as container has top border
-  legalHeader.innerHTML = '<span>RECHTLICHES</span>';
+  legalHeader.style.borderBottom = 'none';
+  legalHeader.innerHTML = '<span>LEGAL</span>';
   sbLegal.appendChild(legalHeader);
 
   const impressumItem = document.createElement('div');
@@ -150,17 +164,17 @@ function render() {
   impressumItem.textContent = 'Impressum';
   impressumItem.onclick = () => {
     currentMode = 'impressum';
-    selectedTopicId = null; // Deselect topic
+    selectedTopicId = null;
     render();
   };
   sbLegal.appendChild(impressumItem);
 
   const privacyItem = document.createElement('div');
   privacyItem.className = `sidebar-item ${currentMode === 'privacy' ? 'active' : ''}`;
-  privacyItem.textContent = 'Datenschutz';
+  privacyItem.textContent = 'Privacy Policy';
   privacyItem.onclick = () => {
     currentMode = 'privacy';
-    selectedTopicId = null; // Deselect topic
+    selectedTopicId = null;
     render();
   };
   sbLegal.appendChild(privacyItem);
@@ -168,31 +182,31 @@ function render() {
   sidebar.appendChild(sbLegal);
   shell.appendChild(sidebar);
 
-  // --- MAIN COLUMN ---
+  // -----------------------------------------
+  // Main Content Column
+  // -----------------------------------------
   const mainCol = document.createElement('div');
   mainCol.className = 'main-column';
 
-  // Top Menu
+  // Top Navigation Bar
   const topMenu = document.createElement('header');
   topMenu.className = 'top-menu';
 
-  // Left side of Top Menu: Current Topic Name
+  // Title Area
   const topicTitle = document.createElement('div');
   topicTitle.style.fontWeight = 'bold';
 
   const currentTopic = store.state.topics.find(t => t.id === selectedTopicId);
-
   let titleText = '';
   if (currentMode === 'impressum') titleText = 'Impressum';
-  else if (currentMode === 'privacy') titleText = 'Datenschutzerklärung';
+  else if (currentMode === 'privacy') titleText = 'Privacy Policy';
   else {
     titleText = currentTopic ? currentTopic.name : 'No Topic Selected';
   }
-
   topicTitle.textContent = titleText;
   topMenu.appendChild(topicTitle);
 
-  // Right side: Mode Switcher
+  // Mode Switcher (Editor vs Generator)
   const modeSwitcher = document.createElement('div');
   modeSwitcher.className = 'mode-switcher';
 
@@ -212,7 +226,7 @@ function render() {
   topMenu.appendChild(modeSwitcher);
   mainCol.appendChild(topMenu);
 
-  // Content Area
+  // View Content Area
   const contentArea = document.createElement('main');
   contentArea.className = 'content-area';
 
@@ -227,6 +241,7 @@ function render() {
       renderGenerator(contentArea, currentTopic);
     }
   } else {
+    // Empty State
     contentArea.innerHTML = '<div style="opacity:0.5; text-align:center; padding-top:50px;">Create a topic to get started.</div>';
   }
 
@@ -235,13 +250,15 @@ function render() {
   app.appendChild(shell);
 }
 
-// Initial Render
+// =========================================
+// App Bootstrap
+// =========================================
 console.log('effDRY App v1.0.1 - GitHub Pages Build');
 render();
 
-// Subscribe to store changes to keep Sidebar and Title in sync
+// Subscribe to store updates to keep UI in sync
 store.subscribe(() => {
-  // Check if selected topic still exists
+  // Ensure selectedTopicId remains valid after deletions
   const exists = store.state.topics.find(t => t.id === selectedTopicId);
   if (!exists) {
     selectedTopicId = store.state.topics.length > 0 ? store.state.topics[0].id : null;

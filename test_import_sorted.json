@@ -1,22 +1,97 @@
 {
     "topics": [
         {
-            "id": "test_sorting_topic",
-            "name": "Test: Keyword Sorting",
+            "id": "topic_stress_sort",
+            "name": "Stress Test: Keyword Sorting (15+ Vars)",
             "keywordMappings": {
-                "z_last": "Zebra",
-                "a_first": "Apple",
-                "m_middle": "Middle"
+                "z_var": "1. Zeta",
+                "a_var": "2. Alpha",
+                "m_var": "3. Mueller",
+                "b_var": "4. Beta",
+                "y_var": "5. Yankee",
+                "c_var": "6. Charlie",
+                "k_var": "7. Kilo",
+                "0_var": "0. Ground Zero"
             },
             "keywordOrder": [
-                "a_first",
-                "m_middle",
-                "z_last"
+                "0_var",
+                "z_var",
+                "a_var",
+                "m_var",
+                "b_var",
+                "y_var",
+                "c_var",
+                "k_var"
             ],
             "templates": [
                 {
-                    "id": "t_sort_1",
-                    "content": "This template uses three variables: {z_last}, {a_first}, and {m_middle}. In the Generator, they should appear in Alphabetical order of their variable names because of the defined order.",
+                    "id": "t_stress_1",
+                    "content": "Checking Order in Generator:\n1. {0_var}\n2. {z_var}\n3. {a_var}\n4. {m_var}\n5. {b_var}\n6. {y_var}\n7. {c_var}\n8. {k_var}\n\nUnsorted Extras: {random_1}, {random_2}",
+                    "isRichText": false
+                }
+            ]
+        },
+        {
+            "id": "topic_rich_email",
+            "name": "Rich Text: Email Marketing",
+            "keywordMappings": {
+                "fname": "First Name",
+                "product": "Product Name",
+                "discount": "Discount %"
+            },
+            "keywordOrder": [
+                "fname",
+                "product",
+                "discount"
+            ],
+            "templates": [
+                {
+                    "id": "t_email_1",
+                    "content": "<h1>Hello {fname}!</h1><p>We noticed you looked at <b>{product}</b>.</p><p>Here is a <span style=\"color: red; font-weight: bold;\">{discount}% OFF</span> coupon just for you!</p><hr><p><small>Unsubscribe here</small></p>",
+                    "isRichText": true
+                },
+                {
+                    "id": "t_email_2",
+                    "content": "<div style=\"background:#f0f0f0; padding:20px;\"><h2>Weekly Update for {fname}</h2><p>Top trending: <u>{product}</u></p></div>",
+                    "isRichText": true
+                }
+            ]
+        },
+        {
+            "id": "topic_code",
+            "name": "Dev: React Component Generator",
+            "keywordMappings": {
+                "CompName": "Component Name",
+                "props": "Props (comma separated)",
+                "hook": "React Hook"
+            },
+            "keywordOrder": [
+                "CompName",
+                "props",
+                "hook"
+            ],
+            "templates": [
+                {
+                    "id": "t_react_1",
+                    "content": "import React, { {hook} } from 'react';\n\nexport const {CompName} = ({ {props} }) => {\n  const [state, setState] = {hook}(null);\n\n  return (\n    <div className=\"{CompName}\">\n      {/* Content here */}\n    </div>\n  );\n};",
+                    "isRichText": false
+                },
+                {
+                    "id": "t_react_test",
+                    "content": "import { render, screen } from '@testing-library/react';\nimport { {CompName} } from './{CompName}';\n\ntest('renders {CompName}', () => {\n  render(<{CompName} {props} />);\n  // Add assertions\n});",
+                    "isRichText": false
+                }
+            ]
+        },
+        {
+            "id": "topic_legacy",
+            "name": "Legacy: No Sorting Defined",
+            "keywordMappings": {},
+            "keywordOrder": [],
+            "templates": [
+                {
+                    "id": "t_legacy_1",
+                    "content": "Variables should appear alphabetically:\n{zebra}\n{apple}\n{banana}",
                     "isRichText": false
                 }
             ]

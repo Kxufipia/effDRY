@@ -1,10 +1,19 @@
 import { store } from '../store.js'
 import { extractKeywords } from '../utils.js'
 
+/**
+ * Renders the Editor view for a specific topic.
+ * Allows managing the topic name, keywords, and templates.
+ * 
+ * @param {HTMLElement} container - The DOM element to render content into.
+ * @param {Object} topic - The topic object to edit.
+ */
 export function renderEditor(container, topic) {
     let lastFocusedTextarea = null;
 
-    // 1. Topic Name Editor
+    // =========================================
+    // 1. TOPIC NAME EDITOR
+    // =========================================
     const nameContainer = document.createElement('div');
     nameContainer.className = 'mb-4';
 
@@ -27,7 +36,9 @@ export function renderEditor(container, topic) {
     nameContainer.append(nameLabel, nameInput);
     container.appendChild(nameContainer);
 
-    // 1.5 Template Controls
+    // =========================================
+    // 2. TEMPLATE CONTROLS (Add/Delete Loop)
+    // =========================================
     const controls = document.createElement('div');
     controls.className = 'mb-4 flex-row';
     controls.style.justifyContent = 'space-between';
@@ -67,7 +78,11 @@ export function renderEditor(container, topic) {
     controls.append(bulkGroup, deleteBtn);
     container.appendChild(controls);
 
-    // 2. Collect All Keywords
+    // =========================================
+    // 3. KEYWORD COLLECTION & TOOLBAR PREPARATION
+    // =========================================
+
+    // Collect all unique keywords from all templates + existing mappings
     const allKeywords = new Set();
     topic.templates.forEach(t => {
         extractKeywords(t.content).forEach(k => allKeywords.add(k));
@@ -76,17 +91,17 @@ export function renderEditor(container, topic) {
         Object.keys(topic.keywordMappings).forEach(k => allKeywords.add(k));
     }
 
-    // 3. Shared Keyword Toolbar
+    // Shared Keyword Toolbar Element (Created once, moved around or cloned as needed)
+    // Note: In this architecture, we create it but append it dynamically to focused editors
     let kwToolbar = null;
     if (allKeywords.size > 0) {
         kwToolbar = document.createElement('div');
         kwToolbar.className = 'mb-4';
-
-        kwToolbar.style.padding = '10px';
         kwToolbar.style.padding = '10px';
         kwToolbar.style.background = 'rgba(0, 122, 204, 0.1)';
         kwToolbar.style.border = '1px solid var(--accent-color)';
         kwToolbar.style.borderRadius = '4px';
+
         // Prevent focus loss when clicking toolbar background/gaps
         kwToolbar.onmousedown = (e) => e.preventDefault();
 
@@ -118,6 +133,7 @@ export function renderEditor(container, topic) {
             badge.style.border = '1px solid var(--border-color)';
             badge.title = `Insert {${k}}`;
 
+            // Handle Keyword Insertion
             badge.onmousedown = (e) => {
                 e.preventDefault(); // Prevent focus loss from editor
                 e.stopPropagation(); // Don't bubble to container
@@ -146,11 +162,12 @@ export function renderEditor(container, topic) {
             };
             kwList.appendChild(badge);
         });
-        // kwToolbar will be appended to specific editors on focus
-        kwToolbar.appendChild(kwList);
-        // container.appendChild(kwToolbar); // REMOVED: Only show on focus
 
-        // --- NEW: Keyword Renaming Section ---
+        kwToolbar.appendChild(kwList);
+
+        // =========================================
+        // 4. KEYWORD RENAMING & SORTING (Drag-and-Drop)
+        // =========================================
         const renameSection = document.createElement('div');
         renameSection.className = 'mb-4';
         renameSection.style.padding = '10px';
@@ -198,7 +215,7 @@ export function renderEditor(container, topic) {
         renameGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
         renameGrid.style.gap = '10px';
 
-        // Sort keywords for display
+        // Sort keywords for display in the grid
         const sortedKeywords = Array.from(allKeywords);
         if (topic.keywordOrder && topic.keywordOrder.length > 0) {
             sortedKeywords.sort((a, b) => {
@@ -213,7 +230,7 @@ export function renderEditor(container, topic) {
             sortedKeywords.sort();
         }
 
-        // Drag and Drop State
+        // Render each keyword block with Drag-and-Drop capability
         let draggedKeyword = null;
 
         sortedKeywords.forEach(k => {
@@ -223,29 +240,29 @@ export function renderEditor(container, topic) {
             field.style.cursor = 'grab';
             field.style.border = '1px solid transparent';
 
-            // Visual feedback during drag
+            // --- Drag Start ---
             field.ondragstart = (e) => {
                 draggedKeyword = k;
                 e.dataTransfer.effectAllowed = 'move';
-                // REQUIRED for Drag to work in some browsers/engines
-                e.dataTransfer.setData('text/plain', k);
+                e.dataTransfer.setData('text/plain', k); // Required for some browsers
                 field.style.opacity = '0.5';
                 field.classList.add('dragging');
             };
 
+            // --- Drag End ---
             field.ondragend = () => {
                 field.style.opacity = '1';
                 field.classList.remove('dragging');
                 draggedKeyword = null;
-                // Remove all drop indicators
+                // Cleanup visual indicators
                 Array.from(renameGrid.children).forEach(child => {
                     child.style.border = '1px solid transparent';
                 });
             };
 
-            // Drag Over - Allow Drop
+            // --- Drag Over (Allow Drop) ---
             field.ondragover = (e) => {
-                e.preventDefault(); // Necessary to allow dropping
+                e.preventDefault(); // Essential to allow dropping
                 e.dataTransfer.dropEffect = 'move';
                 field.style.border = '1px dashed var(--accent-color)';
             };
@@ -254,11 +271,11 @@ export function renderEditor(container, topic) {
                 field.style.border = '1px solid transparent';
             };
 
+            // --- Drop Action ---
             field.ondrop = (e) => {
                 e.preventDefault();
                 field.style.border = '1px solid transparent';
 
-                // robustly get the source keyword
                 const sourceKw = draggedKeyword || e.dataTransfer.getData('text/plain');
                 if (!sourceKw || sourceKw === k) return;
 
@@ -268,16 +285,11 @@ export function renderEditor(container, topic) {
                 const toIndex = newOrder.indexOf(k);
 
                 if (fromIndex !== -1 && toIndex !== -1) {
-                    // Remove from old pos
                     newOrder.splice(fromIndex, 1);
-                    // Insert at new pos
                     newOrder.splice(toIndex, 0, sourceKw);
 
-                    // Update Store
                     store.updateKeywordOrder(topic.id, newOrder);
-
-                    // Re-render editor
-                    renderEditor(container, topic);
+                    renderEditor(container, topic); // Full Re-render to reflect new order
                 }
             };
 
@@ -291,14 +303,12 @@ export function renderEditor(container, topic) {
 
             const input = document.createElement('input');
             input.placeholder = "Display Label";
-            // Check mappings
             const mappings = topic.keywordMappings || {};
             input.value = mappings[k] || '';
             input.style.fontSize = '0.85rem';
             input.style.padding = '4px 8px';
-            // Prevent drag when interacting with input
+            // Stop drag propagation when typing
             input.onmousedown = (e) => e.stopPropagation();
-
             input.onchange = (e) => {
                 store.updateKeywordMapping(topic.id, k, e.target.value);
             };
@@ -311,18 +321,20 @@ export function renderEditor(container, topic) {
         container.appendChild(renameSection);
     }
 
-    // 4. Template Controls (Moved to top)
-
-    // 5. Template List
+    // =========================================
+    // 5. TEMPLATE LIST
+    // =========================================
     const list = document.createElement('div');
 
-    // Helper to create toolbar button
+    /**
+     * Helper to create a WYSIWYG toolbar button
+     */
     function createToolbarBtn(label, command, value = null) {
         const btn = document.createElement('button');
         btn.className = 'wysiwyg-btn';
         btn.textContent = label;
         btn.onmousedown = (e) => {
-            e.preventDefault(); // prevent losing focus
+            e.preventDefault(); // Prevent losing focus from editor
             document.execCommand(command, false, value);
         };
         return btn;
@@ -335,13 +347,12 @@ export function renderEditor(container, topic) {
         const head = document.createElement('div');
         head.className = 'template-header';
 
-        // Right side of header (Actions)
+        // --- Template Actions ---
         const actionsContainer = document.createElement('div');
         actionsContainer.className = 'flex-row';
         actionsContainer.style.width = '100%';
         actionsContainer.style.justifyContent = 'flex-end';
 
-        // Rich Text Toggle
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'secondary';
         toggleBtn.style.fontSize = '0.8rem';
@@ -360,14 +371,14 @@ export function renderEditor(container, topic) {
         head.append(actionsContainer);
         card.appendChild(head);
 
-        // Mount point for Dynamic Keyword Toolbar
+        // Mount point for Dynamic Keyword Toolbar (injected when editor focused)
         const toolbarMount = document.createElement('div');
         toolbarMount.className = 'keyword-toolbar-area';
         card.appendChild(toolbarMount);
 
-        // EDITOR BODY
+        // --- Editor Body ---
         if (tpl.isRichText) {
-            // RICH TEXT EDITOR
+            // RICH TEXT (ContentEditable)
             const container = document.createElement('div');
             container.className = 'wysiwyg-container';
 
@@ -385,12 +396,13 @@ export function renderEditor(container, topic) {
             const editor = document.createElement('div');
             editor.className = 'wysiwyg-content';
             editor.contentEditable = true;
-            editor.innerHTML = tpl.content; // Render HTML
+            editor.innerHTML = tpl.content;
 
-            // Sync changes
+            // Sync changes to store
             editor.onblur = (e) => {
                 store.updateTemplate(topic.id, tpl.id, { content: editor.innerHTML }, false); // Silent Update
 
+                // If hovering toolbar, do not hide it
                 if (kwToolbar && kwToolbar.matches(':hover')) return;
 
                 const newFocus = e.relatedTarget;
@@ -398,6 +410,7 @@ export function renderEditor(container, topic) {
                     return;
                 }
 
+                // Delayed check to see where focus went
                 setTimeout(() => {
                     if (document.activeElement !== editor &&
                         !kwToolbar.contains(document.activeElement) &&
@@ -407,7 +420,7 @@ export function renderEditor(container, topic) {
                 }, 150);
             };
 
-            // Track focus for shared keywords
+            // On Focus: Attach shared keyword toolbar
             editor.onfocus = () => {
                 lastFocusedTextarea = editor;
                 if (kwToolbar) {
@@ -419,7 +432,7 @@ export function renderEditor(container, topic) {
             card.appendChild(container);
 
         } else {
-            // PLAIN TEXT EDITOR
+            // PLAIN TEXT (Textarea)
             const textarea = document.createElement('textarea');
             textarea.className = 'editor-textarea';
             textarea.value = tpl.content;
@@ -429,7 +442,6 @@ export function renderEditor(container, topic) {
             textarea.style.display = 'block';
             textarea.style.marginTop = '0';
 
-            // Track focus
             textarea.onfocus = () => {
                 lastFocusedTextarea = textarea;
                 if (kwToolbar) {
@@ -440,12 +452,11 @@ export function renderEditor(container, topic) {
             textarea.onblur = (e) => {
                 store.updateTemplate(topic.id, tpl.id, { content: e.target.value }, false); // Silent
 
-                // Robust check: Is the mouse over the toolbar?
                 if (kwToolbar && kwToolbar.matches(':hover')) return;
 
                 const newFocus = e.relatedTarget;
                 if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
-                    return; // Don't remove if moving to toolbar
+                    return;
                 }
 
                 setTimeout(() => {
@@ -462,7 +473,7 @@ export function renderEditor(container, topic) {
             card.appendChild(textarea);
         }
 
-        // --- NEW: Used Keywords Footer ---
+        // --- Used Keywords Indicator ---
         const footer = document.createElement('div');
         footer.style.marginTop = '10px';
         footer.style.paddingTop = '10px';
@@ -503,7 +514,5 @@ export function renderEditor(container, topic) {
 
         list.appendChild(card);
     });
-
-    container.appendChild(list);
 
 }

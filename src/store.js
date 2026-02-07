@@ -31,6 +31,11 @@ export const store = {
 
   listeners: [],
 
+  /**
+   * Subscribe to state changes.
+   * @param {Function} listener - Callback function to invoke on state change.
+   * @returns {Function} Unsubscribe function.
+   */
   subscribe(listener) {
     this.listeners.push(listener);
     return () => {
@@ -38,10 +43,17 @@ export const store = {
     };
   },
 
+  /**
+   * Notify all listeners of the current state.
+   */
   notify() {
     this.listeners.forEach(l => l(this.state));
   },
 
+  /**
+   * Save the current state to localStorage and optionally notify listeners.
+   * @param {boolean} [notify=true] - Whether to trigger listeners after saving.
+   */
   save(notify = true) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     if (notify) {
@@ -49,7 +61,15 @@ export const store = {
     }
   },
 
-  // Actions
+  // =========================================
+  // Topic Actions
+  // =========================================
+
+  /**
+   * Add a new topic.
+   * @param {string} name - Name of the topic.
+   * @returns {string} The ID of the newly created topic.
+   */
   addTopic(name) {
     const id = crypto.randomUUID();
     this.state.topics.push({ id, name, templates: [], keywordMappings: {}, keywordOrder: [] });
@@ -57,6 +77,11 @@ export const store = {
     return id;
   },
 
+  /**
+   * Update an existing topic's name.
+   * @param {string} id - Topic ID.
+   * @param {string} name - New name.
+   */
   updateTopic(id, name) {
     const topic = this.state.topics.find(t => t.id === id);
     if (topic) {
@@ -65,6 +90,12 @@ export const store = {
     }
   },
 
+  /**
+   * Update the display label for a specific keyword in a topic.
+   * @param {string} topicId - Topic ID.
+   * @param {string} keyword - The keyword to map (e.g., "customer_name").
+   * @param {string} label - The display label (e.g., "Customer Name").
+   */
   updateKeywordMapping(topicId, keyword, label) {
     const topic = this.state.topics.find(t => t.id === topicId);
     if (topic) {
@@ -74,6 +105,11 @@ export const store = {
     }
   },
 
+  /**
+   * Update the sort order of keywords for a topic.
+   * @param {string} topicId - Topic ID.
+   * @param {string[]} newOrder - Array of keywords in desired order.
+   */
   updateKeywordOrder(topicId, newOrder) {
     const topic = this.state.topics.find(t => t.id === topicId);
     if (topic) {
@@ -82,11 +118,25 @@ export const store = {
     }
   },
 
+  /**
+   * Delete a topic by ID.
+   * @param {string} id - Topic ID.
+   */
   deleteTopic(id) {
     this.state.topics = this.state.topics.filter(t => t.id !== id);
     this.save();
   },
 
+  // =========================================
+  // Template Actions
+  // =========================================
+
+  /**
+   * Add a new template to a topic.
+   * @param {string} topicId - Topic ID.
+   * @param {string} content - Template content.
+   * @returns {string|undefined} The ID of the new template, or undefined if topic not found.
+   */
   addTemplate(topicId, content) {
     const topic = this.state.topics.find(t => t.id === topicId);
     if (topic) {
@@ -97,6 +147,13 @@ export const store = {
     }
   },
 
+  /**
+   * Update a template's properties.
+   * @param {string} topicId - Topic ID.
+   * @param {string} templateId - Template ID.
+   * @param {Object} updates - Object containing properties to update (content, isRichText).
+   * @param {boolean} [notify=true] - Whether to trigger a re-render. Set to false for high-frequency updates (e.g., tying).
+   */
   updateTemplate(topicId, templateId, updates, notify = true) {
     const topic = this.state.topics.find(t => t.id === topicId);
     if (topic) {
@@ -108,6 +165,11 @@ export const store = {
     }
   },
 
+  /**
+   * Delete a template.
+   * @param {string} topicId - Topic ID.
+   * @param {string} templateId - Template ID.
+   */
   deleteTemplate(topicId, templateId) {
     const topic = this.state.topics.find(t => t.id === topicId);
     if (topic) {
@@ -116,6 +178,15 @@ export const store = {
     }
   },
 
+  // =========================================
+  // Import/Export
+  // =========================================
+
+  /**
+   * Import data into the store.
+   * @param {Object} data - The data object to import.
+   * @returns {boolean} True if import was successful, false otherwise.
+   */
   importData(data) {
     // Basic validation
     if (data && Array.isArray(data.topics)) {

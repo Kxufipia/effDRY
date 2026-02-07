@@ -1,5 +1,9 @@
+/**
+ * Renders the Impressum (Imprint) page.
+ * @param {HTMLElement} container - The DOM element to render content into.
+ */
 export function renderImpressum(container) {
-    container.innerHTML = `
+  container.innerHTML = `
     <div class="legal-page">
       <h1>Impressum</h1>
       <p>Angaben gemäß § 5 TMG</p>
@@ -17,8 +21,12 @@ export function renderImpressum(container) {
   `;
 }
 
+/**
+ * Renders the Privacy Policy page.
+ * @param {HTMLElement} container - The DOM element to render content into.
+ */
 export function renderPrivacy(container) {
-    container.innerHTML = `
+  container.innerHTML = `
     <div class="legal-page">
       <h1>Datenschutzerklärung</h1>
       <h2>1. Datenschutz auf einen Blick</h2>

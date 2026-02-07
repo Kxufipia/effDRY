@@ -1,12 +1,18 @@
 import { store } from '../store.js'
 import { extractKeywords, interpolate } from '../utils.js'
 
-// We keep a small local cache of values so they don't vanish when switching tabs
-// In a real app, this might go in the store or a context
+// Cache input values by topic ID to persist data when switching tabs.
+// In a larger app, this would be part of the global store.
 const valuesCache = {};
 
+/**
+ * Renders the Generator view where users input data and see results.
+ * 
+ * @param {HTMLElement} container - The DOM element to render content into.
+ * @param {Object} topic - The current topic object containing templates and settings.
+ */
 export function renderGenerator(container, topic) {
-    // Ensure we have an object for this topic
+    // Initialize cache for this topic if missing
     if (!valuesCache[topic.id]) valuesCache[topic.id] = {};
     const values = valuesCache[topic.id];
 
@@ -15,13 +21,18 @@ export function renderGenerator(container, topic) {
 
     const wrapper = document.createElement('div');
 
-    // 1. INPUT FORM
+    // =========================================
+    // 1. INPUT FORM SECTION
+    // =========================================
+
+    // Collect all unique keywords from all templates in this topic
     const keywords = new Set();
     topic.templates.forEach(t => {
         extractKeywords(t.content).forEach(k => keywords.add(k));
     });
 
     if (keywords.size > 0) {
+        // --- Header (Title & Reset Button) ---
         const headerNodes = document.createElement('div');
         headerNodes.style.display = 'flex';
         headerNodes.style.justifyContent = 'space-between';
@@ -42,7 +53,7 @@ export function renderGenerator(container, topic) {
         resetBtn.onclick = () => {
             if (confirm('Clear all inputs?')) {
                 Object.keys(values).forEach(k => delete values[k]);
-                // Re-render inputs to clear them
+                // Re-render inputs to clear them visually
                 renderGenerator(container, topic);
             }
         };
@@ -50,34 +61,37 @@ export function renderGenerator(container, topic) {
         headerNodes.append(title, resetBtn);
         wrapper.appendChild(headerNodes);
 
+        // --- Keyword Inputs Grid ---
         const form = document.createElement('div');
         form.className = 'grid mb-4';
         form.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
 
-        // Convert to array and sort based on topic.keywordOrder
+        // Sort keywords based on user-defined order (topic.keywordOrder)
         const sortedKeywords = Array.from(keywords);
         if (topic.keywordOrder && topic.keywordOrder.length > 0) {
             sortedKeywords.sort((a, b) => {
                 const idxA = topic.keywordOrder.indexOf(a);
                 const idxB = topic.keywordOrder.indexOf(b);
-                // If both found, sort by index
+                // If both found in custom order, sort by index
                 if (idxA !== -1 && idxB !== -1) return idxA - idxB;
                 // If only A found, A comes first
                 if (idxA !== -1) return -1;
                 // If only B found, B comes first
                 if (idxB !== -1) return 1;
-                // If neither, alphabet (default) or keep relative? Let's use localeCompare
+                // If neither, fallback to alphabetical
                 return a.localeCompare(b);
             });
         } else {
             sortedKeywords.sort(); // Default alphabetical
         }
 
+        // Render input fields
         sortedKeywords.forEach(k => {
             const field = document.createElement('div');
 
             const label = document.createElement('label');
             const mappings = topic.keywordMappings || {};
+            // Use custom label if available, otherwise use keyword key
             label.textContent = mappings[k] || k;
             if (mappings[k]) {
                 label.style.fontWeight = 'bold';
@@ -91,9 +105,11 @@ export function renderGenerator(container, topic) {
             const input = document.createElement('input');
             input.value = values[k] || '';
             input.placeholder = `Value for ${k}...`;
+
+            // Real-time update
             input.oninput = (e) => {
                 values[k] = e.target.value;
-                renderPreviews(); // Update previews in real-time
+                renderPreviews(); // Refresh previews immediately
             };
 
             field.append(label, input);
@@ -107,7 +123,9 @@ export function renderGenerator(container, topic) {
         wrapper.appendChild(divider);
     }
 
-    // 2. OUTPUT PREVIEWS
+    // =========================================
+    // 2. OUTPUT PREVIEWS SECTION
+    // =========================================
     const previewHeader = document.createElement('h3');
     previewHeader.innerHTML = '2. Generated Results';
     previewHeader.style.fontSize = '1rem';
@@ -118,8 +136,12 @@ export function renderGenerator(container, topic) {
 
     const outputs = document.createElement('div');
     outputs.className = 'grid';
-    outputs.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))'; // Wider than inputs for readability
+    outputs.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))'; // Wider cards
 
+    /**
+     * Renders the preview cards based on current input values.
+     * Called initially and on every input change.
+     */
     function renderPreviews() {
         outputs.innerHTML = '';
         if (topic.templates.length === 0) {
@@ -138,31 +160,16 @@ export function renderGenerator(container, topic) {
             copyBtn.className = 'icon-btn';
             copyBtn.innerHTML = '📋 <span style="font-size:0.8rem">Copy</span>';
 
+            // Interpolate values
             const text = interpolate(t.content, values);
 
             copyBtn.onclick = () => {
-                // Copy text strip html if rich? No, usually copy formatted. 
-                // For now, simpler to use clipboard API which naturally handles text. 
-                // If rich text, maybe copy ID.
-                // Let's copy plain text representation for now to be safe, or html source?
-                // User usually wants the RESULT. 
-                // If I put HTML into clipboard as 'text/html', it pastes formatted.
-
-                if (t.isRichText) {
-                    const blob = new Blob([text], { type: 'text/html' });
-                    const item = new ClipboardItem({ 'text/html': blob, 'text/plain': new Blob([text], { type: 'text/plain' }) }); // Fallback
-                    // Actually, copying 'text' (which is HTML string) as 'text/plain' will paste code.
-                    // We likely want to copy the *rendered* result.
-                    // Simplest: Write the text (which is HTML or Plain) to a temporary element, select, and execCommand('copy').
-                    // OR use Clipboard API.
-                    // Let's stick to text for now.
-                    navigator.clipboard.writeText(text);
-                } else {
-                    navigator.clipboard.writeText(text);
-                }
-
-                copyBtn.innerHTML = '✅ <span style="font-size:0.8rem">Copied</span>';
-                setTimeout(() => copyBtn.innerHTML = '📋 <span style="font-size:0.8rem">Copy</span>', 1000);
+                // Determine what to copy based on Rich Text vs Plain Text
+                // Currently, we copy the raw text content for simplicity and compatibility
+                navigator.clipboard.writeText(text).then(() => {
+                    copyBtn.innerHTML = '✅ <span style="font-size:0.8rem">Copied</span>';
+                    setTimeout(() => copyBtn.innerHTML = '📋 <span style="font-size:0.8rem">Copy</span>', 1000);
+                });
             };
 
             head.appendChild(copyBtn);
@@ -171,7 +178,7 @@ export function renderGenerator(container, topic) {
             if (t.isRichText) {
                 previewContent = document.createElement('div');
                 previewContent.style.padding = '15px';
-                previewContent.innerHTML = text; // Render HTML
+                previewContent.innerHTML = text; // Render as HTML
             } else {
                 previewContent = document.createElement('pre');
                 previewContent.style.margin = '0';
@@ -179,7 +186,7 @@ export function renderGenerator(container, topic) {
                 previewContent.style.fontFamily = 'var(--mono-font)';
                 previewContent.style.whiteSpace = 'pre-wrap';
                 previewContent.style.fontSize = '0.9rem';
-                previewContent.textContent = text;
+                previewContent.textContent = text; // Render as plain text
             }
 
             card.append(head, previewContent);
