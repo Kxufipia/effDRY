@@ -220,7 +220,7 @@ export function renderGenerator(container, topic) {
             grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
             grid.style.gap = '20px';
 
-            templates.forEach(t => {
+            templates.forEach(tpl => {
                 const card = document.createElement('div');
                 card.className = 'template-card';
 
@@ -238,7 +238,7 @@ export function renderGenerator(container, topic) {
 
                 // Interpolate values
                 // 1. Process Logic blocks ({#if var}...{/if})
-                const processedContent = parseLogic(t.content || '', values);
+                const processedContent = parseLogic(tpl.content || '', values);
                 // 2. Interpolate variables ({var})
                 const text = interpolate(processedContent, values);
 
@@ -265,7 +265,7 @@ export function renderGenerator(container, topic) {
                 head.appendChild(btnContainer);
 
                 let previewContent;
-                if (t.isRichText) {
+                if (tpl.isRichText) {
                     previewContent = document.createElement('div');
                     previewContent.style.padding = '15px';
                     previewContent.innerHTML = text; // Render as HTML
