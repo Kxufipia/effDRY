@@ -84,8 +84,9 @@ export function renderEditor(container, topic) {
 
     // Collect all unique keywords from all templates + existing mappings
     const allKeywords = new Set();
-    topic.templates.forEach(t => {
-        extractKeywords(t.content).forEach(k => allKeywords.add(k));
+    const safeTemplates = topic.templates || [];
+    safeTemplates.forEach(t => {
+        extractKeywords(t.content || '').forEach(k => allKeywords.add(k));
     });
     if (topic.keywordMappings) {
         Object.keys(topic.keywordMappings).forEach(k => allKeywords.add(k));
@@ -325,6 +326,7 @@ export function renderEditor(container, topic) {
     // 5. TEMPLATE LIST
     // =========================================
     const list = document.createElement('div');
+    const templates = topic.templates || []; // Safety check
 
     /**
      * Helper to create a WYSIWYG toolbar button
@@ -340,179 +342,193 @@ export function renderEditor(container, topic) {
         return btn;
     }
 
-    topic.templates.forEach(tpl => {
-        const card = document.createElement('div');
-        card.className = 'template-card';
+    if (templates.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.textContent = "No templates yet. Click 'Add Template' to create one.";
+        emptyMsg.style.padding = '20px';
+        emptyMsg.style.textAlign = 'center';
+        emptyMsg.style.opacity = '0.6';
+        list.appendChild(emptyMsg);
+    }
 
-        const head = document.createElement('div');
-        head.className = 'template-header';
+    templates.forEach(tpl => {
+        try {
+            const card = document.createElement('div');
+            card.className = 'template-card';
+            const safeContent = tpl.content || ''; // Ensure content is string
 
-        // --- Template Actions ---
-        const actionsContainer = document.createElement('div');
-        actionsContainer.className = 'flex-row';
-        actionsContainer.style.width = '100%';
-        actionsContainer.style.justifyContent = 'flex-end';
+            const head = document.createElement('div');
+            head.className = 'template-header';
 
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'secondary';
-        toggleBtn.style.fontSize = '0.8rem';
-        toggleBtn.textContent = tpl.isRichText ? 'Switch to Plain Text' : 'Switch to Rich Text';
-        toggleBtn.onclick = () => {
-            store.updateTemplate(topic.id, tpl.id, { isRichText: !tpl.isRichText });
-        };
+            // --- Template Actions ---
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'flex-row';
+            actionsContainer.style.width = '100%';
+            actionsContainer.style.justifyContent = 'flex-end';
 
-        const delBtn = document.createElement('button');
-        delBtn.className = 'icon-btn';
-        delBtn.textContent = '🗑️';
-        delBtn.title = "Delete Template";
-        delBtn.onclick = () => store.deleteTemplate(topic.id, tpl.id);
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'secondary';
+            toggleBtn.style.fontSize = '0.8rem';
+            toggleBtn.textContent = tpl.isRichText ? 'Switch to Plain Text' : 'Switch to Rich Text';
+            toggleBtn.onclick = () => {
+                store.updateTemplate(topic.id, tpl.id, { isRichText: !tpl.isRichText });
+            };
 
-        actionsContainer.append(toggleBtn, delBtn);
-        head.append(actionsContainer);
-        card.appendChild(head);
+            const delBtn = document.createElement('button');
+            delBtn.className = 'icon-btn';
+            delBtn.textContent = '🗑️';
+            delBtn.title = "Delete Template";
+            delBtn.onclick = () => store.deleteTemplate(topic.id, tpl.id);
 
-        // Mount point for Dynamic Keyword Toolbar (injected when editor focused)
-        const toolbarMount = document.createElement('div');
-        toolbarMount.className = 'keyword-toolbar-area';
-        card.appendChild(toolbarMount);
+            actionsContainer.append(toggleBtn, delBtn);
+            head.append(actionsContainer);
+            card.appendChild(head);
 
-        // --- Editor Body ---
-        if (tpl.isRichText) {
-            // RICH TEXT (ContentEditable)
-            const container = document.createElement('div');
-            container.className = 'wysiwyg-container';
+            // Mount point for Dynamic Keyword Toolbar (injected when editor focused)
+            const toolbarMount = document.createElement('div');
+            toolbarMount.className = 'keyword-toolbar-area';
+            card.appendChild(toolbarMount);
 
-            const toolbar = document.createElement('div');
-            toolbar.className = 'wysiwyg-toolbar';
-            toolbar.append(
-                createToolbarBtn('B', 'bold'),
-                createToolbarBtn('I', 'italic'),
-                createToolbarBtn('U', 'underline'),
-                createToolbarBtn('H1', 'formatBlock', 'H1'),
-                createToolbarBtn('H2', 'formatBlock', 'H2'),
-                createToolbarBtn('List', 'insertUnorderedList')
-            );
+            // --- Editor Body ---
+            if (tpl.isRichText) {
+                // RICH TEXT (ContentEditable)
+                const container = document.createElement('div');
+                container.className = 'wysiwyg-container';
 
-            const editor = document.createElement('div');
-            editor.className = 'wysiwyg-content';
-            editor.contentEditable = true;
-            editor.innerHTML = tpl.content;
+                const toolbar = document.createElement('div');
+                toolbar.className = 'wysiwyg-toolbar';
+                toolbar.append(
+                    createToolbarBtn('B', 'bold'),
+                    createToolbarBtn('I', 'italic'),
+                    createToolbarBtn('U', 'underline'),
+                    createToolbarBtn('H1', 'formatBlock', 'H1'),
+                    createToolbarBtn('H2', 'formatBlock', 'H2'),
+                    createToolbarBtn('List', 'insertUnorderedList')
+                );
 
-            // Sync changes to store
-            editor.onblur = (e) => {
-                store.updateTemplate(topic.id, tpl.id, { content: editor.innerHTML }, false); // Silent Update
+                const editor = document.createElement('div');
+                editor.className = 'wysiwyg-content';
+                editor.contentEditable = true;
+                editor.innerHTML = safeContent;
 
-                // If hovering toolbar, do not hide it
-                if (kwToolbar && kwToolbar.matches(':hover')) return;
+                // Sync changes to store
+                editor.onblur = (e) => {
+                    store.updateTemplate(topic.id, tpl.id, { content: editor.innerHTML }, false); // Silent Update
 
-                const newFocus = e.relatedTarget;
-                if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
-                    return;
-                }
+                    // If hovering toolbar, do not hide it
+                    if (kwToolbar && kwToolbar.matches(':hover')) return;
 
-                // Delayed check to see where focus went
-                setTimeout(() => {
-                    if (document.activeElement !== editor &&
-                        !kwToolbar.contains(document.activeElement) &&
-                        !kwToolbar.matches(':hover')) {
-                        if (kwToolbar) kwToolbar.remove();
+                    const newFocus = e.relatedTarget;
+                    if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
+                        return;
                     }
-                }, 150);
-            };
 
-            // On Focus: Attach shared keyword toolbar
-            editor.onfocus = () => {
-                lastFocusedTextarea = editor;
-                if (kwToolbar) {
-                    toolbarMount.appendChild(kwToolbar);
-                }
-            };
+                    // Delayed check to see where focus went
+                    setTimeout(() => {
+                        if (document.activeElement !== editor &&
+                            !kwToolbar.contains(document.activeElement) &&
+                            !kwToolbar.matches(':hover')) {
+                            if (kwToolbar) kwToolbar.remove();
+                        }
+                    }, 150);
+                };
 
-            container.append(toolbar, editor);
-            card.appendChild(container);
-
-        } else {
-            // PLAIN TEXT (Textarea)
-            const textarea = document.createElement('textarea');
-            textarea.className = 'editor-textarea';
-            textarea.value = tpl.content;
-            textarea.rows = 4;
-            textarea.placeholder = "Hello {name}..."
-            textarea.style.border = 'none';
-            textarea.style.display = 'block';
-            textarea.style.marginTop = '0';
-
-            textarea.onfocus = () => {
-                lastFocusedTextarea = textarea;
-                if (kwToolbar) {
-                    toolbarMount.appendChild(kwToolbar);
-                }
-            };
-
-            textarea.onblur = (e) => {
-                store.updateTemplate(topic.id, tpl.id, { content: e.target.value }, false); // Silent
-
-                if (kwToolbar && kwToolbar.matches(':hover')) return;
-
-                const newFocus = e.relatedTarget;
-                if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
-                    return;
-                }
-
-                setTimeout(() => {
-                    const active = document.activeElement;
-                    if (active !== textarea &&
-                        !kwToolbar.contains(active) &&
-                        !kwToolbar.matches(':hover')) {
-                        if (kwToolbar) kwToolbar.remove();
+                // On Focus: Attach shared keyword toolbar
+                editor.onfocus = () => {
+                    lastFocusedTextarea = editor;
+                    if (kwToolbar) {
+                        toolbarMount.appendChild(kwToolbar);
                     }
-                }, 150);
-            };
+                };
 
-            textarea.onchange = (e) => store.updateTemplate(topic.id, tpl.id, { content: e.target.value }, false);
-            card.appendChild(textarea);
+                container.append(toolbar, editor);
+                card.appendChild(container);
+
+            } else {
+                // PLAIN TEXT (Textarea)
+                const textarea = document.createElement('textarea');
+                textarea.className = 'editor-textarea';
+                textarea.value = safeContent;
+                textarea.rows = 4;
+                textarea.placeholder = "Hello {name}..."
+                textarea.style.border = 'none';
+                textarea.style.display = 'block';
+                textarea.style.marginTop = '0';
+
+                textarea.onfocus = () => {
+                    lastFocusedTextarea = textarea;
+                    if (kwToolbar) {
+                        toolbarMount.appendChild(kwToolbar);
+                    }
+                };
+
+                textarea.onblur = (e) => {
+                    store.updateTemplate(topic.id, tpl.id, { content: e.target.value }, false); // Silent
+
+                    if (kwToolbar && kwToolbar.matches(':hover')) return;
+
+                    const newFocus = e.relatedTarget;
+                    if (kwToolbar && (kwToolbar.contains(newFocus) || kwToolbar === newFocus)) {
+                        return;
+                    }
+
+                    setTimeout(() => {
+                        const active = document.activeElement;
+                        if (active !== textarea &&
+                            !kwToolbar.contains(active) &&
+                            !kwToolbar.matches(':hover')) {
+                            if (kwToolbar) kwToolbar.remove();
+                        }
+                    }, 150);
+                };
+
+                textarea.onchange = (e) => store.updateTemplate(topic.id, tpl.id, { content: e.target.value }, false);
+                card.appendChild(textarea);
+            }
+
+            // --- Used Keywords Indicator ---
+            const footer = document.createElement('div');
+            footer.style.marginTop = '10px';
+            footer.style.paddingTop = '10px';
+            footer.style.borderTop = '1px dashed var(--border-color)';
+
+            const usedTitle = document.createElement('div');
+            usedTitle.textContent = 'Used Keywords:';
+            usedTitle.style.fontSize = '0.7rem';
+            usedTitle.style.opacity = '0.6';
+            usedTitle.style.marginBottom = '5px';
+            footer.appendChild(usedTitle);
+
+            const kwContainer = document.createElement('div');
+            kwContainer.style.display = 'flex';
+            kwContainer.style.alignItems = 'center';
+            kwContainer.style.flexWrap = 'wrap';
+            kwContainer.style.gap = '5px';
+
+            const keywords = extractKeywords(safeContent);
+            if (keywords.length > 0) {
+                keywords.forEach(k => {
+                    const badge = document.createElement('span');
+                    badge.className = 'keyword-badge';
+                    badge.textContent = `{${k}}`;
+                    badge.style.fontSize = '0.75rem';
+                    badge.style.padding = '2px 6px';
+                    kwContainer.appendChild(badge);
+                });
+            } else {
+                const empty = document.createElement('span');
+                empty.textContent = 'None';
+                empty.style.opacity = '0.5';
+                empty.style.fontSize = '0.75rem';
+                kwContainer.appendChild(empty);
+            }
+            footer.appendChild(kwContainer);
+            card.appendChild(footer);
+
+            list.appendChild(card);
+        } catch (err) {
+            console.error('Error rendering template:', err, tpl);
         }
-
-        // --- Used Keywords Indicator ---
-        const footer = document.createElement('div');
-        footer.style.marginTop = '10px';
-        footer.style.paddingTop = '10px';
-        footer.style.borderTop = '1px dashed var(--border-color)';
-
-        const usedTitle = document.createElement('div');
-        usedTitle.textContent = 'Used Keywords:';
-        usedTitle.style.fontSize = '0.7rem';
-        usedTitle.style.opacity = '0.6';
-        usedTitle.style.marginBottom = '5px';
-        footer.appendChild(usedTitle);
-
-        const kwContainer = document.createElement('div');
-        kwContainer.style.display = 'flex';
-        kwContainer.style.alignItems = 'center';
-        kwContainer.style.flexWrap = 'wrap';
-        kwContainer.style.gap = '5px';
-
-        const keywords = extractKeywords(tpl.content);
-        if (keywords.length > 0) {
-            keywords.forEach(k => {
-                const badge = document.createElement('span');
-                badge.className = 'keyword-badge';
-                badge.textContent = `{${k}}`;
-                badge.style.fontSize = '0.75rem';
-                badge.style.padding = '2px 6px';
-                kwContainer.appendChild(badge);
-            });
-        } else {
-            const empty = document.createElement('span');
-            empty.textContent = 'None';
-            empty.style.opacity = '0.5';
-            empty.style.fontSize = '0.75rem';
-            kwContainer.appendChild(empty);
-        }
-        footer.appendChild(kwContainer);
-        card.appendChild(footer);
-
-        list.appendChild(card);
     });
 
     container.appendChild(list);
