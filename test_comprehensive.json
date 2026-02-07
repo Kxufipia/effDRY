@@ -1,0 +1,99 @@
+{
+    "topicFolders": [
+        {
+            "id": "f_marketing",
+            "name": "Marketing",
+            "isCollapsed": false
+        },
+        {
+            "id": "f_support",
+            "name": "Support",
+            "isCollapsed": false
+        },
+        {
+            "id": "f_internal",
+            "name": "Internal",
+            "isCollapsed": true
+        }
+    ],
+    "topics": [
+        {
+            "id": "t_newsletter",
+            "name": "Monthly Newsletter",
+            "folderId": "f_marketing",
+            "groups": [
+                {
+                    "id": "g_drafts",
+                    "name": "Drafts"
+                },
+                {
+                    "id": "g_final",
+                    "name": "Final Ops"
+                }
+            ],
+            "templates": [
+                {
+                    "id": "tpl_intro",
+                    "groupId": "g_drafts",
+                    "content": "<h1>Hello {subscriber:Friend},</h1><p>Welcome to the <b>{month:January}</b> edition of our newsletter!</p>{#if is_vip}<p style='color:gold'>Special offer for VIPs: {vip_code}</p>{/if}",
+                    "isRichText": true
+                },
+                {
+                    "id": "tpl_promo",
+                    "groupId": "g_final",
+                    "content": "Don't miss out on our {season:Winter} Sale! Use code {code} for {discount:20}% off.",
+                    "isRichText": false
+                }
+            ],
+            "keywordMappings": {
+                "subscriber": "Subscriber Name",
+                "is_vip": "Is VIP?"
+            },
+            "keywordOrder": [
+                "subscriber",
+                "month",
+                "is_vip",
+                "vip_code"
+            ]
+        },
+        {
+            "id": "t_refunds",
+            "name": "Refund Policy",
+            "folderId": "f_support",
+            "groups": [
+                {
+                    "id": "g_standard",
+                    "name": "Standard"
+                }
+            ],
+            "templates": [
+                {
+                    "id": "tpl_full_refund",
+                    "groupId": "g_standard",
+                    "content": "Dear {customer},\n\nWe have processed a full refund of ${amount} for order #{order_id}.\n\n{#if reason_required}Reason provided: {reason}{/if}\n\nRegards,\nSupport",
+                    "isRichText": false
+                },
+                {
+                    "id": "tpl_partial",
+                    "groupId": "g_standard",
+                    "content": "Dear {customer},<br>We have issued a partial refund. Please check your statement in 3-5 business days.",
+                    "isRichText": true
+                }
+            ]
+        },
+        {
+            "id": "t_standup",
+            "name": "Daily Standup",
+            "folderId": "f_internal",
+            "groups": [],
+            "templates": [
+                {
+                    "id": "tpl_daily",
+                    "groupId": null,
+                    "content": "*Yesterday*: {yesterday}\n*Today*: {today}\n*Blockers*: {blockers:None}",
+                    "isRichText": false
+                }
+            ]
+        }
+    ]
+}

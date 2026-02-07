@@ -4,6 +4,7 @@ import { renderEditor } from './views/Editor.js'
 import { renderGenerator } from './views/Generator.js'
 import { renderImpressum, renderPrivacy } from './views/Legal.js'
 import { renderHelp } from './views/Help.js'
+import { t, setLanguage, getLanguage, subscribeLanguage } from './i18n.js'
 
 const app = document.querySelector('#app')
 
@@ -52,7 +53,7 @@ function render() {
   // Sidebar Header (Topics)
   const sbHeader = document.createElement('div');
   sbHeader.className = 'sidebar-header';
-  sbHeader.innerHTML = '<span>TOPICS</span>';
+  sbHeader.innerHTML = `<span>${t('sidebar.topics')}</span>`;
   sbHeader.style.flexWrap = 'wrap';
 
   const actions = document.createElement('div');
@@ -62,10 +63,10 @@ function render() {
   const addFolderBtn = document.createElement('button');
   addFolderBtn.className = 'icon-btn';
   addFolderBtn.textContent = '📁+';
-  addFolderBtn.title = 'New Folder';
+  addFolderBtn.title = t('sidebar.newFolder');
   addFolderBtn.style.fontSize = '0.8rem';
   addFolderBtn.onclick = () => {
-    const name = prompt('Folder Name:');
+    const name = prompt(`${t('sidebar.newFolder')}:`);
     if (name) store.addTopicFolder(name);
     render();
   };
@@ -73,9 +74,9 @@ function render() {
   const addBtn = document.createElement('button');
   addBtn.className = 'icon-btn';
   addBtn.textContent = '+';
-  addBtn.title = 'New Topic';
+  addBtn.title = t('sidebar.newTopic');
   addBtn.onclick = () => {
-    const id = store.addTopic('New Topic');
+    const id = store.addTopic(t('sidebar.newTopic'));
     selectedTopicId = id;
     currentMode = 'editor';
     render();
@@ -136,8 +137,10 @@ function render() {
     delFolderBtn.style.opacity = '0.5';
     delFolderBtn.onclick = (e) => {
       e.stopPropagation();
-      store.deleteTopicFolder(folder.id);
-      render();
+      if (confirm(t('sidebar.confirmDeleteFolder'))) {
+        store.deleteTopicFolder(folder.id);
+        render();
+      }
     };
 
     folderHeader.append(titleSpan, delFolderBtn);
@@ -245,13 +248,13 @@ function render() {
   const dataHeader = document.createElement('div');
   dataHeader.className = 'sidebar-header';
   dataHeader.style.borderBottom = 'none';
-  dataHeader.innerHTML = '<span>DATA</span>';
+  dataHeader.innerHTML = `<span>${t('sidebar.data')}</span>`;
   sbData.appendChild(dataHeader);
 
   // Export Button
   const exportItem = document.createElement('div');
   exportItem.className = 'sidebar-item';
-  exportItem.textContent = 'Export JSON';
+  exportItem.textContent = t('sidebar.export');
   exportItem.onclick = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(store.state, null, 2));
     const downloadAnchorNode = document.createElement('a');
@@ -266,7 +269,7 @@ function render() {
   // Import Button
   const importItem = document.createElement('div');
   importItem.className = 'sidebar-item';
-  importItem.textContent = 'Import JSON';
+  importItem.textContent = t('sidebar.import');
   importItem.onclick = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -308,12 +311,12 @@ function render() {
   const supportHeader = document.createElement('div');
   supportHeader.className = 'sidebar-header';
   supportHeader.style.borderBottom = 'none';
-  supportHeader.innerHTML = '<span>SUPPORT</span>';
+  supportHeader.innerHTML = `<span>${t('sidebar.support')}</span>`;
   sbSupport.appendChild(supportHeader);
 
   const helpItem = document.createElement('div');
   helpItem.className = `sidebar-item ${currentMode === 'help' ? 'active' : ''}`;
-  helpItem.textContent = 'Help / How-To';
+  helpItem.textContent = t('sidebar.help');
   helpItem.onclick = () => {
     currentMode = 'help';
     selectedTopicId = null;
@@ -330,12 +333,12 @@ function render() {
   const legalHeader = document.createElement('div');
   legalHeader.className = 'sidebar-header';
   legalHeader.style.borderBottom = 'none';
-  legalHeader.innerHTML = '<span>LEGAL</span>';
+  legalHeader.innerHTML = `<span>${t('sidebar.legal')}</span>`;
   sbLegal.appendChild(legalHeader);
 
   const impressumItem = document.createElement('div');
   impressumItem.className = `sidebar-item ${currentMode === 'impressum' ? 'active' : ''}`;
-  impressumItem.textContent = 'Impressum';
+  impressumItem.textContent = t('sidebar.impressum');
   impressumItem.onclick = () => {
     currentMode = 'impressum';
     selectedTopicId = null;
@@ -345,12 +348,13 @@ function render() {
 
   const privacyItem = document.createElement('div');
   privacyItem.className = `sidebar-item ${currentMode === 'privacy' ? 'active' : ''}`;
-  privacyItem.textContent = 'Privacy Policy';
+  privacyItem.textContent = t('sidebar.privacy');
   privacyItem.onclick = () => {
     currentMode = 'privacy';
     selectedTopicId = null;
     render();
   };
+  sbLegal.appendChild(privacyItem);
   sbLegal.appendChild(privacyItem);
 
   sidebar.appendChild(sbLegal);
@@ -372,11 +376,11 @@ function render() {
 
   const currentTopic = store.state.topics.find(t => t.id === selectedTopicId);
   let titleText = '';
-  if (currentMode === 'impressum') titleText = 'Impressum';
-  else if (currentMode === 'privacy') titleText = 'Privacy Policy';
-  else if (currentMode === 'help') titleText = 'Help / Documentation';
+  if (currentMode === 'impressum') titleText = t('sidebar.impressum');
+  else if (currentMode === 'privacy') titleText = t('sidebar.privacy');
+  else if (currentMode === 'help') titleText = t('help.title');
   else {
-    titleText = currentTopic ? currentTopic.name : 'No Topic Selected';
+    titleText = currentTopic ? currentTopic.name : t('header.noTopic');
   }
   topicTitle.textContent = titleText;
   topMenu.appendChild(topicTitle);
@@ -401,7 +405,19 @@ function render() {
     localStorage.setItem('effdry_theme', currentTheme);
     render(); // Re-render to update button icon
   };
-  rightControls.appendChild(themeBtn);
+
+  // Language Toggle
+  const langBtn = document.createElement('button');
+  langBtn.className = 'icon-btn';
+  langBtn.textContent = getLanguage().toUpperCase();
+  langBtn.title = 'Switch Language (EN/DE)';
+  langBtn.style.fontSize = '0.8rem';
+  langBtn.onclick = () => {
+    const next = getLanguage() === 'en' ? 'de' : 'en';
+    setLanguage(next);
+  };
+
+  rightControls.apppend(langBtn, themeBtn);
 
   // Mode Switcher (Editor vs Generator)
   const modeSwitcher = document.createElement('div');
@@ -410,12 +426,12 @@ function render() {
   if (['editor', 'generator'].includes(currentMode)) {
     const btnEdit = document.createElement('button');
     btnEdit.className = `mode-btn ${currentMode === 'editor' ? 'active' : ''}`;
-    btnEdit.textContent = 'Editor';
+    btnEdit.textContent = t('header.editor');
     btnEdit.onclick = () => { currentMode = 'editor'; render(); };
 
     const btnGen = document.createElement('button');
     btnGen.className = `mode-btn ${currentMode === 'generator' ? 'active' : ''}`;
-    btnGen.textContent = 'Generator';
+    btnGen.textContent = t('header.generator');
     btnGen.onclick = () => { currentMode = 'generator'; render(); };
 
     modeSwitcher.append(btnEdit, btnGen);
@@ -464,5 +480,10 @@ store.subscribe(() => {
   if (!exists) {
     selectedTopicId = store.state.topics.length > 0 ? store.state.topics[0].id : null;
   }
+  render();
+});
+
+// Re-render on language change
+subscribeLanguage(() => {
   render();
 });

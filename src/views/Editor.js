@@ -1,6 +1,7 @@
 import { store } from '../store.js'
 import { extractKeywords } from '../utils.js'
 import { showToast } from '../components/Toast.js'
+import { t } from '../i18n.js'
 
 /**
  * Renders the Editor view for a specific topic.
@@ -19,7 +20,7 @@ export function renderEditor(container, topic) {
     nameContainer.className = 'mb-4';
 
     const nameLabel = document.createElement('label');
-    nameLabel.textContent = 'Topic Name';
+    nameLabel.textContent = t('editor.topicName');
     nameLabel.style.display = 'block';
     nameLabel.style.fontSize = '0.8rem';
     nameLabel.style.marginBottom = '5px';
@@ -58,7 +59,7 @@ export function renderEditor(container, topic) {
     countInput.style.width = '60px';
 
     const addBtn = document.createElement('button');
-    addBtn.textContent = 'Add Template(s)';
+    addBtn.textContent = t('editor.addTemplate');
     addBtn.onclick = () => {
         const count = parseInt(countInput.value) || 1;
         for (let i = 0; i < count; i++) {
@@ -71,9 +72,9 @@ export function renderEditor(container, topic) {
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'secondary';
     deleteBtn.style.color = '#f48771';
-    deleteBtn.textContent = 'Delete Topic';
+    deleteBtn.textContent = t('editor.deleteTopic');
     deleteBtn.onclick = () => {
-        if (confirm('Delete this topic and all its templates?')) {
+        if (confirm(t('editor.confirmDeleteTopic'))) {
             const topicBackup = JSON.parse(JSON.stringify(topic)); // Deep clone
             store.deleteTopic(topic.id);
             showToast('Topic deleted.', () => {
@@ -114,7 +115,7 @@ export function renderEditor(container, topic) {
         kwToolbar.onmousedown = (e) => e.preventDefault();
 
         const kwLabel = document.createElement('div');
-        kwLabel.textContent = 'Available Keywords (Click to Insert):';
+        kwLabel.textContent = t('editor.keywords.label');
         kwLabel.style.fontSize = '0.8rem';
         kwLabel.style.marginBottom = '8px';
         kwLabel.style.opacity = '0.8';
@@ -184,7 +185,7 @@ export function renderEditor(container, topic) {
         renameSection.style.borderRadius = '4px';
 
         const renameHeader = document.createElement('div');
-        renameHeader.textContent = 'Refine Keyword Labels (for Generator)';
+        renameHeader.textContent = t('editor.keywords.refine');
         renameHeader.style.fontSize = '0.8rem';
         renameHeader.style.fontWeight = 'bold';
         renameHeader.style.marginBottom = '10px';
@@ -197,7 +198,7 @@ export function renderEditor(container, topic) {
         addKwContainer.style.gap = '10px';
 
         const addKwInput = document.createElement('input');
-        addKwInput.placeholder = "New Keyword (no braces)";
+        addKwInput.placeholder = t('editor.keywords.newPlaceholder');
         addKwInput.style.fontSize = '0.8rem';
 
         const addKwBtn = document.createElement('button');
@@ -208,7 +209,7 @@ export function renderEditor(container, topic) {
             if (!raw) return;
             // Basic validation: alphanumeric + underscore
             if (!/^[a-zA-Z0-9_]+$/.test(raw)) {
-                alert('Keyword must use letters, numbers, and underscores only.');
+                alert(t('editor.keywords.validate'));
                 return;
             }
             store.updateKeywordMapping(topic.id, raw, raw); // Initialize with same name
@@ -310,7 +311,7 @@ export function renderEditor(container, topic) {
             label.style.pointerEvents = 'none'; // Prevent interfering with drag
 
             const input = document.createElement('input');
-            input.placeholder = "Display Label";
+            input.placeholder = t('editor.keywords.displayPlaceholder');
             const mappings = topic.keywordMappings || {};
             input.value = mappings[k] || '';
             input.style.fontSize = '0.85rem';
@@ -346,11 +347,11 @@ export function renderEditor(container, topic) {
     addGroupContainer.style.borderBottom = '1px solid var(--border-color)';
 
     const groupInput = document.createElement('input');
-    groupInput.placeholder = "New Group Name...";
+    groupInput.placeholder = t('editor.group.newPlaceholder');
     groupInput.style.flex = '1';
 
     const addGroupBtn = document.createElement('button');
-    addGroupBtn.textContent = '+ Group';
+    addGroupBtn.textContent = t('editor.group.addBtn');
     addGroupBtn.onclick = () => {
         const name = groupInput.value.trim();
         if (name) {
@@ -452,9 +453,9 @@ export function renderEditor(container, topic) {
             const delBtn = document.createElement('button');
             delBtn.className = 'icon-btn';
             delBtn.innerHTML = '🗑️';
-            delBtn.title = 'Delete Group (Templates move to Ungrouped)';
+            delBtn.title = t('editor.group.deleteConfirm');
             delBtn.onclick = () => {
-                if (confirm('Delete this group? Templates will move to Ungrouped.')) {
+                if (confirm(t('editor.group.deleteConfirm'))) {
                     store.deleteGroup(topic.id, groupId);
                 }
             };
@@ -467,7 +468,7 @@ export function renderEditor(container, topic) {
         // Templates List
         if (templatesInGroup.length === 0) {
             const empty = document.createElement('div');
-            empty.textContent = '(Drag templates here)';
+            empty.textContent = t('editor.group.dragPlaceholder');
             empty.style.opacity = '0.5';
             empty.style.fontSize = '0.8rem';
             empty.style.textAlign = 'center';
@@ -515,7 +516,7 @@ export function renderEditor(container, topic) {
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'secondary';
         toggleBtn.style.fontSize = '0.8rem';
-        toggleBtn.textContent = tpl.isRichText ? 'Switch to Plain Text' : 'Switch to Rich Text';
+        toggleBtn.textContent = tpl.isRichText ? t('editor.template.plain') : t('editor.template.rich');
         toggleBtn.onclick = () => {
             store.updateTemplate(topic.id, tpl.id, { isRichText: !tpl.isRichText });
         };
@@ -523,7 +524,7 @@ export function renderEditor(container, topic) {
         const delBtn = document.createElement('button');
         delBtn.className = 'icon-btn';
         delBtn.textContent = '🗑️';
-        delBtn.title = "Delete Template";
+        delBtn.title = t('editor.template.delete');
         delBtn.onclick = () => {
             const templateBackup = JSON.parse(JSON.stringify(tpl));
             store.deleteTemplate(topic.id, tpl.id);
@@ -663,7 +664,7 @@ export function renderEditor(container, topic) {
     // 2. Render Ungrouped
     const ungrouped = (topic.templates || []).filter(t => !t.groupId);
     if (ungrouped.length > 0 || groups.length === 0) {
-        groupsContainer.appendChild(renderGroup(null, 'Ungrouped', ungrouped));
+        groupsContainer.appendChild(renderGroup(null, t('editor.group.ungrouped'), ungrouped));
     }
 
     container.appendChild(groupsContainer);

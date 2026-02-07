@@ -1,5 +1,6 @@
 import { store } from '../store.js'
 import { extractKeywords, extractDefaults, interpolate, parseLogic, getVariableTypes, isTruthy } from '../utils.js'
+import { t } from '../i18n.js'
 
 // Cache input values by topic ID to persist data when switching tabs.
 // In a larger app, this would be part of the global store.
@@ -55,11 +56,11 @@ export function renderGenerator(container, topic) {
         title.style.textTransform = 'uppercase';
         title.style.opacity = '0.7';
         title.style.margin = '0';
-        title.textContent = '1. Enter Keywords';
+        title.textContent = '1. ' + t('editor.keywords.label').split('(')[0]; // Reuse label or distinct key
 
         const resetBtn = document.createElement('button');
         resetBtn.className = 'secondary';
-        resetBtn.textContent = 'Reset Inputs';
+        resetBtn.textContent = t('generator.reset');
         resetBtn.style.fontSize = '0.8rem';
         resetBtn.onclick = () => {
             if (confirm('Clear all inputs?')) {
@@ -175,7 +176,7 @@ export function renderGenerator(container, topic) {
     // 2. OUTPUT PREVIEWS SECTION
     // =========================================
     const previewHeader = document.createElement('h3');
-    previewHeader.innerHTML = '2. Generated Results';
+    previewHeader.innerHTML = '2. ' + t('generator.preview');
     previewHeader.style.fontSize = '1rem';
     previewHeader.style.marginBottom = '15px';
     previewHeader.style.textTransform = 'uppercase';
@@ -195,7 +196,7 @@ export function renderGenerator(container, topic) {
         outputs.innerHTML = '';
         const safeTemplates = topic.templates || [];
         if (safeTemplates.length === 0) {
-            outputs.innerHTML = '<div style="opacity:0.5; padding: 10px;">No templates defined in this topic.</div>';
+            outputs.innerHTML = `<div style="opacity:0.5; padding: 10px;">${t('generator.empty')}</div>`;
             return;
         }
 
@@ -232,8 +233,8 @@ export function renderGenerator(container, topic) {
 
                 const copyTextBtn = document.createElement('button');
                 copyTextBtn.className = 'icon-btn';
-                copyTextBtn.innerHTML = '📄 <span style="font-size:0.8rem">Text</span>';
-                copyTextBtn.title = "Copy Plain Text";
+                copyTextBtn.innerHTML = `📄 <span style="font-size:0.8rem">${t('generator.copyText')}</span>`;
+                copyTextBtn.title = t('generator.copyText');
 
                 // Interpolate values
                 // 1. Process Logic blocks ({#if var}...{/if})
@@ -244,19 +245,19 @@ export function renderGenerator(container, topic) {
                 copyTextBtn.onclick = () => {
                     const plainText = text.replace(/<[^>]+>/g, ''); // Simple strip tags
                     navigator.clipboard.writeText(plainText).then(() => {
-                        copyTextBtn.innerHTML = '✅ <span style="font-size:0.8rem">Text</span>';
-                        setTimeout(() => copyTextBtn.innerHTML = '📄 <span style="font-size:0.8rem">Text</span>', 1000);
+                        copyTextBtn.innerHTML = `✅ <span style="font-size:0.8rem">${t('generator.copied')}</span>`;
+                        setTimeout(() => copyTextBtn.innerHTML = `📄 <span style="font-size:0.8rem">${t('generator.copyText')}</span>`, 1000);
                     });
                 };
 
                 const copyHtmlBtn = document.createElement('button');
                 copyHtmlBtn.className = 'icon-btn';
-                copyHtmlBtn.innerHTML = '📋 <span style="font-size:0.8rem">HTML</span>';
-                copyHtmlBtn.title = "Copy HTML Code";
+                copyHtmlBtn.innerHTML = `📋 <span style="font-size:0.8rem">${t('generator.copyHtml')}</span>`;
+                copyHtmlBtn.title = t('generator.copyHtml');
                 copyHtmlBtn.onclick = () => {
                     navigator.clipboard.writeText(text).then(() => {
-                        copyHtmlBtn.innerHTML = '✅ <span style="font-size:0.8rem">HTML</span>';
-                        setTimeout(() => copyHtmlBtn.innerHTML = '📋 <span style="font-size:0.8rem">HTML</span>', 1000);
+                        copyHtmlBtn.innerHTML = `✅ <span style="font-size:0.8rem">${t('generator.copied')}</span>`;
+                        setTimeout(() => copyHtmlBtn.innerHTML = `📋 <span style="font-size:0.8rem">${t('generator.copyHtml')}</span>`, 1000);
                     });
                 };
 
