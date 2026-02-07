@@ -65,6 +65,7 @@ const dictionary = {
         'help.sec.richText': '5. Rich Text Mode',
         'help.sec.topics': '6. Topic Folders (Sidebar)',
         'help.sec.data': '7. Import / Export',
+        'help.sec.renaming': '8. Keyword Renaming',
     },
     de: {
         // Main / Sidebar
@@ -135,6 +136,7 @@ const dictionary = {
 };
 
 let currentLang = localStorage.getItem('effdry_lang') || 'en';
+if (!dictionary[currentLang]) currentLang = 'en';
 const listeners = [];
 
 /**

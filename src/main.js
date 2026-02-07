@@ -471,7 +471,12 @@ function render() {
 // App Bootstrap
 // =========================================
 console.log('effDRY App v1.1.0 - Low Hanging Fruit Features');
-render();
+try {
+  render();
+} catch (e) {
+  document.body.innerHTML = `<div style="color:red; padding:20px;"><h3>Application Error</h3><pre>${e.stack}</pre><button onclick="localStorage.removeItem('effdry_lang');location.reload()">Reset Language</button></div>`;
+  console.error(e);
+}
 
 // Subscribe to store updates to keep UI in sync
 store.subscribe(() => {

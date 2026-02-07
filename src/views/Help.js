@@ -127,6 +127,22 @@ export function renderHelp(container) {
                     <li><b>Import JSON</b>: Restores data from a file.</li>
                 </ul>
             `
+        },
+        {
+            title: t('help.sec.renaming'),
+            content: lang === 'de' ? `
+                <p>Passe die Anzeige von Platzhaltern im Generator an.</p>
+                <ul>
+                    <li><b>Anzeigename</b>: Ändere z.B. <code>{cust_name}</code> zu "Kundenname" im Generator-Formular.</li>
+                    <li><b>Sortierung</b>: Ziehe die Keywords per Drag & Drop in die gewünschte Reihenfolge.</li>
+                </ul>
+            ` : `
+                <p>Customize how placeholders appear in the Generator.</p>
+                <ul>
+                    <li><b>Display Label</b>: Change e.g. <code>{cust_name}</code> to "Customer Name" in the Generator form.</li>
+                    <li><b>Sorting</b>: Drag and drop keywords to change their order in the form.</li>
+                </ul>
+            `
         }
     ];
 
