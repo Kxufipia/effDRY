@@ -72,7 +72,7 @@ export const store = {
    */
   addTopic(name) {
     const id = crypto.randomUUID();
-    this.state.topics.push({ id, name, templates: [], keywordMappings: {}, keywordOrder: [] });
+    this.state.topics.push({ id, name, groups: [], templates: [], keywordMappings: {}, keywordOrder: [] });
     this.save();
     return id;
   },
@@ -137,6 +137,80 @@ export const store = {
   },
 
   // =========================================
+  // Group Actions
+  // =========================================
+
+  /**
+   * Add a new group to a topic.
+   * @param {string} topicId 
+   * @param {string} name 
+   */
+  addGroup(topicId, name) {
+    const topic = this.state.topics.find(t => t.id === topicId);
+    if (topic) {
+      if (!topic.groups) topic.groups = [];
+      const id = crypto.randomUUID();
+      topic.groups.push({ id, name });
+      this.save();
+      return id;
+    }
+  },
+
+  /**
+   * Update a group's name.
+   * @param {string} topicId 
+   * @param {string} groupId 
+   * @param {string} name 
+   */
+  updateGroup(topicId, groupId, name) {
+    const topic = this.state.topics.find(t => t.id === topicId);
+    if (topic && topic.groups) {
+      const group = topic.groups.find(g => g.id === groupId);
+      if (group) {
+        group.name = name;
+        this.save();
+      }
+    }
+  },
+
+  /**
+   * Delete a group. Moves templates to ungrouped (null).
+   * @param {string} topicId 
+   * @param {string} groupId 
+   */
+  deleteGroup(topicId, groupId) {
+    const topic = this.state.topics.find(t => t.id === topicId);
+    if (topic && topic.groups) {
+      // Remove group
+      topic.groups = topic.groups.filter(g => g.id !== groupId);
+      // Move templates to root
+      topic.templates.forEach(t => {
+        if (t.groupId === groupId) {
+          t.groupId = null;
+        }
+      });
+      this.save();
+    }
+  },
+
+  /**
+   * Move a template to a specific group (or root).
+   * @param {string} topicId 
+   * @param {string} templateId 
+   * @param {string|null} groupId 
+   */
+  moveTemplate(topicId, templateId, groupId) {
+    const topic = this.state.topics.find(t => t.id === topicId);
+    if (topic) {
+      const tpl = topic.templates.find(t => t.id === templateId);
+      if (tpl) {
+        tpl.groupId = groupId;
+        this.save();
+      }
+    }
+  },
+
+  // =========================================
   // Template Actions
   // =========================================
 
@@ -147,11 +221,11 @@ export const store = {
    * @param {string} [forceId] - Optional ID to force (for restore/undo).
    * @returns {string|undefined} The ID of the new template, or undefined if topic not found.
    */
-  addTemplate(topicId, content, forceId = null) {
+  addTemplate(topicId, content, forceId = null, groupId = null) {
     const topic = this.state.topics.find(t => t.id === topicId);
     if (topic) {
       const id = forceId || crypto.randomUUID();
-      topic.templates.push({ id, content });
+      topic.templates.push({ id, content, groupId });
       this.save();
       return id;
     }

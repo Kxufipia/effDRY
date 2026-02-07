@@ -183,8 +183,9 @@ export function renderGenerator(container, topic) {
     wrapper.appendChild(previewHeader);
 
     const outputs = document.createElement('div');
-    outputs.className = 'grid';
-    outputs.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))'; // Wider cards
+    outputs.style.display = 'flex';
+    outputs.style.flexDirection = 'column';
+    outputs.style.gap = '30px';
 
     /**
      * Renders the preview cards based on current input values.
@@ -194,72 +195,108 @@ export function renderGenerator(container, topic) {
         outputs.innerHTML = '';
         const safeTemplates = topic.templates || [];
         if (safeTemplates.length === 0) {
-            outputs.innerHTML = '<div style="opacity:0.5">No templates defined in this topic.</div>';
+            outputs.innerHTML = '<div style="opacity:0.5; padding: 10px;">No templates defined in this topic.</div>';
             return;
         }
 
-        safeTemplates.forEach(t => {
-            const card = document.createElement('div');
-            card.className = 'template-card';
+        const renderSection = (title, templates) => {
+            if (templates.length === 0) return;
 
-            const head = document.createElement('div');
-            head.className = 'template-header';
+            const section = document.createElement('div');
 
-            const btnContainer = document.createElement('div');
-            btnContainer.className = 'flex-row';
-            btnContainer.style.gap = '5px';
-
-            const copyTextBtn = document.createElement('button');
-            copyTextBtn.className = 'icon-btn';
-            copyTextBtn.innerHTML = '📄 <span style="font-size:0.8rem">Text</span>';
-            copyTextBtn.title = "Copy Plain Text";
-
-            // Interpolate values
-            // 1. Process Logic blocks ({#if var}...{/if})
-            const processedContent = parseLogic(t.content || '', values);
-            // 2. Interpolate variables ({var})
-            const text = interpolate(processedContent, values);
-
-            copyTextBtn.onclick = () => {
-                const plainText = text.replace(/<[^>]+>/g, ''); // Simple strip tags
-                navigator.clipboard.writeText(plainText).then(() => {
-                    copyTextBtn.innerHTML = '✅ <span style="font-size:0.8rem">Text</span>';
-                    setTimeout(() => copyTextBtn.innerHTML = '📄 <span style="font-size:0.8rem">Text</span>', 1000);
-                });
-            };
-
-            const copyHtmlBtn = document.createElement('button');
-            copyHtmlBtn.className = 'icon-btn';
-            copyHtmlBtn.innerHTML = '📋 <span style="font-size:0.8rem">HTML</span>';
-            copyHtmlBtn.title = "Copy HTML Code";
-            copyHtmlBtn.onclick = () => {
-                navigator.clipboard.writeText(text).then(() => {
-                    copyHtmlBtn.innerHTML = '✅ <span style="font-size:0.8rem">HTML</span>';
-                    setTimeout(() => copyHtmlBtn.innerHTML = '📋 <span style="font-size:0.8rem">HTML</span>', 1000);
-                });
-            };
-
-            btnContainer.append(copyTextBtn, copyHtmlBtn);
-            head.appendChild(btnContainer);
-
-            let previewContent;
-            if (t.isRichText) {
-                previewContent = document.createElement('div');
-                previewContent.style.padding = '15px';
-                previewContent.innerHTML = text; // Render as HTML
-            } else {
-                previewContent = document.createElement('pre');
-                previewContent.style.margin = '0';
-                previewContent.style.padding = '15px';
-                previewContent.style.fontFamily = 'var(--mono-font)';
-                previewContent.style.whiteSpace = 'pre-wrap';
-                previewContent.style.fontSize = '0.9rem';
-                previewContent.textContent = text; // Render as plain text
+            if (title) {
+                const h4 = document.createElement('h4');
+                h4.textContent = title;
+                h4.style.margin = '0 0 10px 0';
+                h4.style.opacity = '0.8';
+                h4.style.borderBottom = '1px solid var(--border-color)';
+                h4.style.paddingBottom = '5px';
+                section.appendChild(h4);
             }
 
-            card.append(head, previewContent);
-            outputs.appendChild(card);
-        });
+            const grid = document.createElement('div');
+            grid.className = 'grid';
+            grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+            grid.style.gap = '20px';
+
+            templates.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'template-card';
+
+                const head = document.createElement('div');
+                head.className = 'template-header';
+
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'flex-row';
+                btnContainer.style.gap = '5px';
+
+                const copyTextBtn = document.createElement('button');
+                copyTextBtn.className = 'icon-btn';
+                copyTextBtn.innerHTML = '📄 <span style="font-size:0.8rem">Text</span>';
+                copyTextBtn.title = "Copy Plain Text";
+
+                // Interpolate values
+                // 1. Process Logic blocks ({#if var}...{/if})
+                const processedContent = parseLogic(t.content || '', values);
+                // 2. Interpolate variables ({var})
+                const text = interpolate(processedContent, values);
+
+                copyTextBtn.onclick = () => {
+                    const plainText = text.replace(/<[^>]+>/g, ''); // Simple strip tags
+                    navigator.clipboard.writeText(plainText).then(() => {
+                        copyTextBtn.innerHTML = '✅ <span style="font-size:0.8rem">Text</span>';
+                        setTimeout(() => copyTextBtn.innerHTML = '📄 <span style="font-size:0.8rem">Text</span>', 1000);
+                    });
+                };
+
+                const copyHtmlBtn = document.createElement('button');
+                copyHtmlBtn.className = 'icon-btn';
+                copyHtmlBtn.innerHTML = '📋 <span style="font-size:0.8rem">HTML</span>';
+                copyHtmlBtn.title = "Copy HTML Code";
+                copyHtmlBtn.onclick = () => {
+                    navigator.clipboard.writeText(text).then(() => {
+                        copyHtmlBtn.innerHTML = '✅ <span style="font-size:0.8rem">HTML</span>';
+                        setTimeout(() => copyHtmlBtn.innerHTML = '📋 <span style="font-size:0.8rem">HTML</span>', 1000);
+                    });
+                };
+
+                btnContainer.append(copyTextBtn, copyHtmlBtn);
+                head.appendChild(btnContainer);
+
+                let previewContent;
+                if (t.isRichText) {
+                    previewContent = document.createElement('div');
+                    previewContent.style.padding = '15px';
+                    previewContent.innerHTML = text; // Render as HTML
+                } else {
+                    previewContent = document.createElement('pre');
+                    previewContent.style.margin = '0';
+                    previewContent.style.padding = '15px';
+                    previewContent.style.fontFamily = 'var(--mono-font)';
+                    previewContent.style.whiteSpace = 'pre-wrap';
+                    previewContent.style.fontSize = '0.9rem';
+                    previewContent.textContent = text; // Render as plain text
+                }
+
+                card.append(head, previewContent);
+                grid.appendChild(card);
+            });
+
+            section.appendChild(grid);
+            outputs.appendChild(section);
+        };
+
+        // 1. Ungrouped
+        const ungrouped = safeTemplates.filter(t => !t.groupId);
+        renderSection(null, ungrouped);
+
+        // 2. Groups
+        if (topic.groups) {
+            topic.groups.forEach(g => {
+                const groupTemplates = safeTemplates.filter(t => t.groupId === g.id);
+                renderSection(g.name, groupTemplates);
+            });
+        }
     }
 
     renderPreviews();

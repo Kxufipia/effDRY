@@ -1,0 +1,46 @@
+{
+    "topics": [
+        {
+            "id": "test-groups-v1",
+            "name": "Feature Showcase: Template Groups",
+            "groups": [
+                {
+                    "id": "grp-email",
+                    "name": "Email Templates"
+                },
+                {
+                    "id": "grp-sms",
+                    "name": "SMS Messages"
+                }
+            ],
+            "templates": [
+                {
+                    "id": "tpl-email-1",
+                    "content": "Hi {name},\n\nCheck out our new features!",
+                    "isRichText": false,
+                    "groupId": "grp-email"
+                },
+                {
+                    "id": "tpl-email-2",
+                    "content": "Dear {name},\n\nYour invoice is ready.",
+                    "isRichText": false,
+                    "groupId": "grp-email"
+                },
+                {
+                    "id": "tpl-sms-1",
+                    "content": "Your code is {code:1234}.",
+                    "isRichText": false,
+                    "groupId": "grp-sms"
+                },
+                {
+                    "id": "tpl-misc-1",
+                    "content": "Just a random note.",
+                    "isRichText": false,
+                    "groupId": null
+                }
+            ],
+            "keywordMappings": {},
+            "keywordOrder": []
+        }
+    ]
+}
