@@ -155,6 +155,28 @@ function render() {
   sbData.appendChild(importItem);
   sidebar.appendChild(sbData);
 
+  // SUPPORT Section
+  const sbSupport = document.createElement('div');
+  sbSupport.className = 'sidebar-legal';
+  sbSupport.style.borderTop = '1px solid var(--border-color)';
+
+  const supportHeader = document.createElement('div');
+  supportHeader.className = 'sidebar-header';
+  supportHeader.style.borderBottom = 'none';
+  supportHeader.innerHTML = '<span>SUPPORT</span>';
+  sbSupport.appendChild(supportHeader);
+
+  const helpItem = document.createElement('div');
+  helpItem.className = `sidebar-item ${currentMode === 'help' ? 'active' : ''}`;
+  helpItem.textContent = 'Help / How-To';
+  helpItem.onclick = () => {
+    currentMode = 'help';
+    selectedTopicId = null;
+    render();
+  };
+  sbSupport.appendChild(helpItem);
+  sidebar.appendChild(sbSupport);
+
   // Legal Links Section
   const sbLegal = document.createElement('div');
   sbLegal.className = 'sidebar-legal';
@@ -185,16 +207,6 @@ function render() {
     render();
   };
   sbLegal.appendChild(privacyItem);
-
-  const helpItem = document.createElement('div');
-  helpItem.className = `sidebar-item ${currentMode === 'help' ? 'active' : ''}`;
-  helpItem.textContent = 'Help / How-To';
-  helpItem.onclick = () => {
-    currentMode = 'help';
-    selectedTopicId = null;
-    render();
-  };
-  sbLegal.appendChild(helpItem);
 
   sidebar.appendChild(sbLegal);
   shell.appendChild(sidebar);
