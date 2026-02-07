@@ -159,12 +159,13 @@ export function renderGenerator(container, topic) {
      */
     function renderPreviews() {
         outputs.innerHTML = '';
-        if (topic.templates.length === 0) {
+        const safeTemplates = topic.templates || [];
+        if (safeTemplates.length === 0) {
             outputs.innerHTML = '<div style="opacity:0.5">No templates defined in this topic.</div>';
             return;
         }
 
-        topic.templates.forEach(t => {
+        safeTemplates.forEach(t => {
             const card = document.createElement('div');
             card.className = 'template-card';
 
@@ -179,6 +180,10 @@ export function renderGenerator(container, topic) {
             copyTextBtn.className = 'icon-btn';
             copyTextBtn.innerHTML = '📄 <span style="font-size:0.8rem">Text</span>';
             copyTextBtn.title = "Copy Plain Text";
+
+            // Interpolate values
+            const text = interpolate(t.content || '', values);
+
             copyTextBtn.onclick = () => {
                 const plainText = text.replace(/<[^>]+>/g, ''); // Simple strip tags
                 navigator.clipboard.writeText(plainText).then(() => {
