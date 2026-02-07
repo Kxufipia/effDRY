@@ -1,10 +1,15 @@
 const STORAGE_KEY = 'effdry_data_v2'; // Bump version to force new defaults
 
 const defaultData = {
+  topicFolders: [
+    { id: 'demo_folder', name: 'Demo Folder', isCollapsed: false }
+  ],
   topics: [
     {
       id: 'demo_topic',
       name: 'Demo: Customer Responses',
+      folderId: 'demo_folder',
+      groups: [],
       templates: [
         {
           id: 't1',
@@ -68,13 +73,52 @@ export const store = {
   /**
    * Add a new topic.
    * @param {string} name - Name of the topic.
+   * @param {string} [folderId] - Optional folder ID.
    * @returns {string} The ID of the newly created topic.
    */
-  addTopic(name) {
+  addTopic(name, folderId = null) {
     const id = crypto.randomUUID();
-    this.state.topics.push({ id, name, groups: [], templates: [], keywordMappings: {}, keywordOrder: [] });
+    this.state.topics.push({ id, name, folderId, groups: [], templates: [], keywordMappings: {}, keywordOrder: [] });
     this.save();
     return id;
+  },
+
+  /**
+   * Add a new topic folder.
+   * @param {string} name 
+   */
+  addTopicFolder(name) {
+    if (!this.state.topicFolders) this.state.topicFolders = [];
+    const id = crypto.randomUUID();
+    this.state.topicFolders.push({ id, name, isCollapsed: false });
+    this.save();
+    return id;
+  },
+
+  updateTopicFolder(id, updates) {
+    const f = this.state.topicFolders.find(f => f.id === id);
+    if (f) {
+      Object.assign(f, updates);
+      this.save();
+    }
+  },
+
+  deleteTopicFolder(id) {
+    if (!confirm('Delete this folder? Topics inside will be moved to root.')) return;
+    this.state.topicFolders = this.state.topicFolders.filter(f => f.id !== id);
+    // Move topics to root
+    this.state.topics.forEach(t => {
+      if (t.folderId === id) t.folderId = null;
+    });
+    this.save();
+  },
+
+  moveTopic(topicId, folderId) {
+    const t = this.state.topics.find(t => t.id === topicId);
+    if (t) {
+      t.folderId = folderId;
+      this.save();
+    }
   },
 
   /**

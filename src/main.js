@@ -53,6 +53,22 @@ function render() {
   const sbHeader = document.createElement('div');
   sbHeader.className = 'sidebar-header';
   sbHeader.innerHTML = '<span>TOPICS</span>';
+  sbHeader.style.flexWrap = 'wrap';
+
+  const actions = document.createElement('div');
+  actions.style.display = 'flex';
+  actions.style.gap = '5px';
+
+  const addFolderBtn = document.createElement('button');
+  addFolderBtn.className = 'icon-btn';
+  addFolderBtn.textContent = '📁+';
+  addFolderBtn.title = 'New Folder';
+  addFolderBtn.style.fontSize = '0.8rem';
+  addFolderBtn.onclick = () => {
+    const name = prompt('Folder Name:');
+    if (name) store.addTopicFolder(name);
+    render();
+  };
 
   const addBtn = document.createElement('button');
   addBtn.className = 'icon-btn';
@@ -61,31 +77,160 @@ function render() {
   addBtn.onclick = () => {
     const id = store.addTopic('New Topic');
     selectedTopicId = id;
-    currentMode = 'editor'; // Switch to editor to see the new topic
+    currentMode = 'editor';
     render();
   };
-  sbHeader.appendChild(addBtn);
+
+  actions.append(addFolderBtn, addBtn);
+  sbHeader.appendChild(actions);
   sidebar.appendChild(sbHeader);
 
   // Sidebar Content (Topic List)
   const sbContent = document.createElement('div');
   sbContent.className = 'sidebar-content';
 
-  store.state.topics.forEach(topic => {
+  // --- Drag and Drop State ---
+  let draggedTopicId = null;
+
+  // 1. Render Folders
+  const folders = store.state.topicFolders || [];
+  folders.forEach(folder => {
+    const folderItem = document.createElement('div');
+    folderItem.className = 'sidebar-folder';
+
+    // Drop Zone for Folder
+    folderItem.ondragover = (e) => {
+      e.preventDefault();
+      folderItem.style.background = 'var(--accent-color)';
+    };
+    folderItem.ondragleave = (e) => {
+      folderItem.style.background = '';
+    };
+    folderItem.ondrop = (e) => {
+      e.preventDefault();
+      folderItem.style.background = '';
+      if (draggedTopicId) {
+        store.moveTopic(draggedTopicId, folder.id);
+        draggedTopicId = null;
+        render();
+      }
+    };
+
+    const folderHeader = document.createElement('div');
+    folderHeader.className = 'sidebar-item folder-header';
+    folderHeader.style.fontWeight = 'bold';
+    folderHeader.style.display = 'flex';
+    folderHeader.style.justifyContent = 'space-between';
+
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = (folder.isCollapsed ? '▶ ' : '▼ ') + folder.name;
+    titleSpan.onclick = () => {
+      store.updateTopicFolder(folder.id, { isCollapsed: !folder.isCollapsed });
+      render();
+    };
+
+    const delFolderBtn = document.createElement('button');
+    delFolderBtn.textContent = 'x';
+    delFolderBtn.className = 'icon-btn';
+    delFolderBtn.style.fontSize = '0.7rem';
+    delFolderBtn.style.opacity = '0.5';
+    delFolderBtn.onclick = (e) => {
+      e.stopPropagation();
+      store.deleteTopicFolder(folder.id);
+      render();
+    };
+
+    folderHeader.append(titleSpan, delFolderBtn);
+    folderItem.appendChild(folderHeader);
+
+    if (!folder.isCollapsed) {
+      const folderTopics = store.state.topics.filter(t => t.folderId === folder.id);
+      folderTopics.forEach(topic => {
+        const item = createTopicItem(topic);
+        item.style.paddingLeft = '25px'; // Indent
+        folderItem.appendChild(item);
+      });
+
+      if (folderTopics.length === 0) {
+        const empty = document.createElement('div');
+        empty.textContent = '(empty)';
+        empty.style.paddingLeft = '25px';
+        empty.style.fontSize = '0.7rem';
+        empty.style.opacity = '0.5';
+        folderItem.appendChild(empty);
+      }
+    }
+
+    sbContent.appendChild(folderItem);
+  });
+
+  // 2. Render Root Topics (No Folder)
+  const rootTopics = store.state.topics.filter(t => !t.folderId);
+  if (rootTopics.length > 0) {
+    if (folders.length > 0) {
+      const div = document.createElement('div');
+      div.style.borderTop = '1px solid var(--border-color)';
+      div.style.margin = '5px 0';
+      sbContent.appendChild(div);
+    }
+    rootTopics.forEach(topic => {
+      sbContent.appendChild(createTopicItem(topic));
+    });
+  }
+
+  // Drop Zone for Root (moving out of folders)
+  sbContent.ondragover = (e) => {
+    // Only if hovering over empty space or root area
+    if (e.target === sbContent) {
+      e.preventDefault();
+      sbContent.style.background = 'rgba(255,255,255,0.05)';
+    }
+  };
+  sbContent.ondragleave = (e) => {
+    sbContent.style.background = '';
+  };
+  sbContent.ondrop = (e) => {
+    if (e.target === sbContent) {
+      e.preventDefault();
+      sbContent.style.background = '';
+      if (draggedTopicId) {
+        store.moveTopic(draggedTopicId, null); // Move to root
+        draggedTopicId = null;
+        render();
+      }
+    }
+  };
+
+  /**
+   * Helper to create a draggable topic item
+   */
+  function createTopicItem(topic) {
     const item = document.createElement('div');
-    // Highlight if active and in a topic-related mode
     item.className = `sidebar-item ${topic.id === selectedTopicId && ['editor', 'generator'].includes(currentMode) ? 'active' : ''}`;
     item.textContent = topic.name;
+    item.draggable = true;
+
+    item.ondragstart = (e) => {
+      draggedTopicId = topic.id;
+      e.dataTransfer.effectAllowed = 'move';
+      item.style.opacity = '0.5';
+    };
+
+    item.ondragend = () => {
+      item.style.opacity = '1';
+      draggedTopicId = null;
+    };
+
     item.onclick = () => {
       selectedTopicId = topic.id;
-      // Switch back to editor if currently in a legal view
       if (!['editor', 'generator'].includes(currentMode)) {
         currentMode = 'editor';
       }
       render();
     };
-    sbContent.appendChild(item);
-  });
+    return item;
+  }
+
   sidebar.appendChild(sbContent);
 
   // -----------------------------------------
