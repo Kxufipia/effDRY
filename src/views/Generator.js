@@ -1,5 +1,5 @@
 import { store } from '../store.js'
-import { extractKeywords, interpolate } from '../utils.js'
+import { extractKeywords, extractDefaults, interpolate } from '../utils.js'
 
 // Cache input values by topic ID to persist data when switching tabs.
 // In a larger app, this would be part of the global store.
@@ -85,6 +85,20 @@ export function renderGenerator(container, topic) {
             sortedKeywords.sort(); // Default alphabetical
         }
 
+        // Collect defaults
+        const defaults = {};
+        topic.templates.forEach(t => {
+            Object.assign(defaults, extractDefaults(t.content));
+        });
+
+        // Loop inputs and set initial values if empty
+        sortedKeywords.forEach(k => {
+            // Pre-fill default if available and no user value yet
+            if (!values[k] && defaults[k]) {
+                values[k] = defaults[k];
+            }
+        });
+
         // Render input fields
         sortedKeywords.forEach(k => {
             const field = document.createElement('div');
@@ -104,7 +118,7 @@ export function renderGenerator(container, topic) {
 
             const input = document.createElement('input');
             input.value = values[k] || '';
-            input.placeholder = `Value for ${k}...`;
+            input.placeholder = defaults[k] ? `Default: ${defaults[k]}` : `Value for ${k}...`;
 
             // Real-time update
             input.oninput = (e) => {
@@ -156,23 +170,35 @@ export function renderGenerator(container, topic) {
             const head = document.createElement('div');
             head.className = 'template-header';
 
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'icon-btn';
-            copyBtn.innerHTML = '📋 <span style="font-size:0.8rem">Copy</span>';
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'flex-row';
+            btnContainer.style.gap = '5px';
 
-            // Interpolate values
-            const text = interpolate(t.content, values);
-
-            copyBtn.onclick = () => {
-                // Determine what to copy based on Rich Text vs Plain Text
-                // Currently, we copy the raw text content for simplicity and compatibility
-                navigator.clipboard.writeText(text).then(() => {
-                    copyBtn.innerHTML = '✅ <span style="font-size:0.8rem">Copied</span>';
-                    setTimeout(() => copyBtn.innerHTML = '📋 <span style="font-size:0.8rem">Copy</span>', 1000);
+            const copyTextBtn = document.createElement('button');
+            copyTextBtn.className = 'icon-btn';
+            copyTextBtn.innerHTML = '📄 <span style="font-size:0.8rem">Text</span>';
+            copyTextBtn.title = "Copy Plain Text";
+            copyTextBtn.onclick = () => {
+                const plainText = text.replace(/<[^>]+>/g, ''); // Simple strip tags
+                navigator.clipboard.writeText(plainText).then(() => {
+                    copyTextBtn.innerHTML = '✅ <span style="font-size:0.8rem">Text</span>';
+                    setTimeout(() => copyTextBtn.innerHTML = '📄 <span style="font-size:0.8rem">Text</span>', 1000);
                 });
             };
 
-            head.appendChild(copyBtn);
+            const copyHtmlBtn = document.createElement('button');
+            copyHtmlBtn.className = 'icon-btn';
+            copyHtmlBtn.innerHTML = '📋 <span style="font-size:0.8rem">HTML</span>';
+            copyHtmlBtn.title = "Copy HTML Code";
+            copyHtmlBtn.onclick = () => {
+                navigator.clipboard.writeText(text).then(() => {
+                    copyHtmlBtn.innerHTML = '✅ <span style="font-size:0.8rem">HTML</span>';
+                    setTimeout(() => copyHtmlBtn.innerHTML = '📋 <span style="font-size:0.8rem">HTML</span>', 1000);
+                });
+            };
+
+            btnContainer.append(copyTextBtn, copyHtmlBtn);
+            head.appendChild(btnContainer);
 
             let previewContent;
             if (t.isRichText) {

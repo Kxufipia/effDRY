@@ -14,6 +14,20 @@
   --mono-font: 'Consolas', 'Courier New', monospace;
 }
 
+[data-theme="light"] {
+  --bg-color: #f3f3f3;
+  --sidebar-bg: #e8e8e8;
+  --header-bg: #ffffff;
+  --text-color: #333333;
+  --text-active: #000000;
+  --accent-color: #007acc;
+  /* Keep same accent */
+  --border-color: #cccccc;
+  --input-bg: #ffffff;
+  --item-hover: #d4d4d4;
+  --item-active: #c6c6c6;
+}
+
 body {
   margin: 0;
   font-family: var(--font-family);

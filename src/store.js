@@ -127,6 +127,15 @@ export const store = {
     this.save();
   },
 
+  /**
+   * Restore a deleted topic.
+   * @param {Object} topic - The topic object to restore.
+   */
+  restoreTopic(topic) {
+    this.state.topics.push(topic);
+    this.save();
+  },
+
   // =========================================
   // Template Actions
   // =========================================
@@ -135,15 +144,29 @@ export const store = {
    * Add a new template to a topic.
    * @param {string} topicId - Topic ID.
    * @param {string} content - Template content.
+   * @param {string} [forceId] - Optional ID to force (for restore/undo).
    * @returns {string|undefined} The ID of the new template, or undefined if topic not found.
    */
-  addTemplate(topicId, content) {
+  addTemplate(topicId, content, forceId = null) {
     const topic = this.state.topics.find(t => t.id === topicId);
     if (topic) {
-      const id = crypto.randomUUID();
+      const id = forceId || crypto.randomUUID();
       topic.templates.push({ id, content });
       this.save();
       return id;
+    }
+  },
+
+  /**
+   * Restore a deleted template.
+   * @param {string} topicId - Topic ID.
+   * @param {Object} template - The template object to restore.
+   */
+  restoreTemplate(topicId, template) {
+    const topic = this.state.topics.find(t => t.id === topicId);
+    if (topic) {
+      topic.templates.push(template);
+      this.save();
     }
   },
 

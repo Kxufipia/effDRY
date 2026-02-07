@@ -1,5 +1,6 @@
 import { store } from '../store.js'
 import { extractKeywords } from '../utils.js'
+import { showToast } from '../components/Toast.js'
 
 /**
  * Renders the Editor view for a specific topic.
@@ -72,7 +73,13 @@ export function renderEditor(container, topic) {
     deleteBtn.style.color = '#f48771';
     deleteBtn.textContent = 'Delete Topic';
     deleteBtn.onclick = () => {
-        if (confirm('Delete this topic and all its templates?')) store.deleteTopic(topic.id);
+        if (confirm('Delete this topic and all its templates?')) {
+            const topicBackup = JSON.parse(JSON.stringify(topic)); // Deep clone
+            store.deleteTopic(topic.id);
+            showToast('Topic deleted.', () => {
+                store.restoreTopic(topicBackup);
+            });
+        }
     };
 
     controls.append(bulkGroup, deleteBtn);
@@ -378,7 +385,13 @@ export function renderEditor(container, topic) {
             delBtn.className = 'icon-btn';
             delBtn.textContent = '🗑️';
             delBtn.title = "Delete Template";
-            delBtn.onclick = () => store.deleteTemplate(topic.id, tpl.id);
+            delBtn.onclick = () => {
+                const templateBackup = JSON.parse(JSON.stringify(tpl));
+                store.deleteTemplate(topic.id, tpl.id);
+                showToast('Template deleted.', () => {
+                    store.restoreTemplate(topic.id, templateBackup);
+                });
+            };
 
             actionsContainer.append(toggleBtn, delBtn);
             head.append(actionsContainer);

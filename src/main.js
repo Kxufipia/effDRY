@@ -11,6 +11,12 @@ const app = document.querySelector('#app')
 // =========================================
 let currentMode = 'editor'; // 'editor', 'generator', 'impressum', 'privacy'
 let selectedTopicId = null;
+let currentTheme = localStorage.getItem('effdry_theme') || 'dark';
+
+// Verify and apply theme on load
+if (currentTheme === 'light') {
+  document.documentElement.setAttribute('data-theme', 'light');
+}
 
 // =========================================
 // Initialization Logic
@@ -206,6 +212,28 @@ function render() {
   topicTitle.textContent = titleText;
   topMenu.appendChild(topicTitle);
 
+  // Right Side Controls (Theme + Mode Switcher)
+  const rightControls = document.createElement('div');
+  rightControls.className = 'flex-row';
+  rightControls.style.gap = '15px';
+
+  // Theme Toggle
+  const themeBtn = document.createElement('button');
+  themeBtn.className = 'icon-btn';
+  themeBtn.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+  themeBtn.title = 'Toggle Theme';
+  themeBtn.onclick = () => {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    if (currentTheme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    localStorage.setItem('effdry_theme', currentTheme);
+    render(); // Re-render to update button icon
+  };
+  rightControls.appendChild(themeBtn);
+
   // Mode Switcher (Editor vs Generator)
   const modeSwitcher = document.createElement('div');
   modeSwitcher.className = 'mode-switcher';
@@ -223,7 +251,9 @@ function render() {
 
     modeSwitcher.append(btnEdit, btnGen);
   }
-  topMenu.appendChild(modeSwitcher);
+  rightControls.appendChild(modeSwitcher);
+  topMenu.appendChild(rightControls);
+
   mainCol.appendChild(topMenu);
 
   // View Content Area
@@ -253,7 +283,7 @@ function render() {
 // =========================================
 // App Bootstrap
 // =========================================
-console.log('effDRY App v1.0.1 - GitHub Pages Build');
+console.log('effDRY App v1.1.0 - Low Hanging Fruit Features');
 render();
 
 // Subscribe to store updates to keep UI in sync
