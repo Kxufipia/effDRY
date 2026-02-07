@@ -3,13 +3,14 @@ import { store } from './store.js'
 import { renderEditor } from './views/Editor.js'
 import { renderGenerator } from './views/Generator.js'
 import { renderImpressum, renderPrivacy } from './views/Legal.js'
+import { renderHelp } from './views/Help.js'
 
 const app = document.querySelector('#app')
 
 // =========================================
 // Global UI State
 // =========================================
-let currentMode = 'editor'; // 'editor', 'generator', 'impressum', 'privacy'
+let currentMode = 'editor'; // 'editor', 'generator', 'impressum', 'privacy', 'help'
 let selectedTopicId = null;
 let currentTheme = localStorage.getItem('effdry_theme') || 'dark';
 
@@ -185,6 +186,16 @@ function render() {
   };
   sbLegal.appendChild(privacyItem);
 
+  const helpItem = document.createElement('div');
+  helpItem.className = `sidebar-item ${currentMode === 'help' ? 'active' : ''}`;
+  helpItem.textContent = 'Help / How-To';
+  helpItem.onclick = () => {
+    currentMode = 'help';
+    selectedTopicId = null;
+    render();
+  };
+  sbLegal.appendChild(helpItem);
+
   sidebar.appendChild(sbLegal);
   shell.appendChild(sidebar);
 
@@ -206,6 +217,7 @@ function render() {
   let titleText = '';
   if (currentMode === 'impressum') titleText = 'Impressum';
   else if (currentMode === 'privacy') titleText = 'Privacy Policy';
+  else if (currentMode === 'help') titleText = 'Help / Documentation';
   else {
     titleText = currentTopic ? currentTopic.name : 'No Topic Selected';
   }
@@ -264,6 +276,8 @@ function render() {
     renderImpressum(contentArea);
   } else if (currentMode === 'privacy') {
     renderPrivacy(contentArea);
+  } else if (currentMode === 'help') {
+    renderHelp(contentArea);
   } else if (currentTopic) {
     if (currentMode === 'editor') {
       renderEditor(contentArea, currentTopic);
