@@ -94,8 +94,12 @@ export function parseLogic(content, values) {
     return content.replace(/{#if\s+([^}]+)}([\s\S]*?){\/if}/g, (match, key, blockContent) => {
         key = key.trim();
         const val = values[key];
-        // Truthy check (handles boolean true, string "true", or non-empty string)
-        if (val && val !== 'false') {
+
+        // Define falsy values (case-insensitive)
+        const falsy = ['false', '0', 'no', 'nein', 'off', 'null', 'undefined', ''];
+        const isFalsy = !val || (typeof val === 'string' && falsy.includes(val.toLowerCase().trim()));
+
+        if (!isFalsy) {
             return blockContent;
         }
         return '';
