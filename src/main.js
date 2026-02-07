@@ -417,7 +417,7 @@ function render() {
     setLanguage(next);
   };
 
-  rightControls.apppend(langBtn, themeBtn);
+  rightControls.append(langBtn, themeBtn);
 
   // Mode Switcher (Editor vs Generator)
   const modeSwitcher = document.createElement('div');
